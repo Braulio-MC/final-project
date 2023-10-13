@@ -1,7 +1,8 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
+import variations from "./variation.js"
 
-const variationOption = sequelize.define("variation_option", {
+const variationOptions = sequelize.define("variation_options", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -12,6 +13,15 @@ const variationOption = sequelize.define("variation_option", {
         type: DataTypes.STRING,
         allowNull: false
     }
+    // variation_id
 })
 
-export default variationOption
+variations.hasMany(variationOptions, {
+    foreignKey: "variation_id"
+})
+
+variationOptions.belongsTo(variations, {
+    foreignKey: "variation_id"
+})
+
+export default variationOptions

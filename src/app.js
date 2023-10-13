@@ -1,13 +1,16 @@
 import express from "express"
 import cors from "cors"
 import helmet from "helmet"
-import usersRoutes from "./routes/users.routes.js"
-import rolesRoutes from "./routes/roles.routes.js"
+import { StatusCodes } from "http-status-codes"
+import usersRoutes from "./routes/user.routes.js"
+import rolesRoutes from "./routes/role.routes.js"
 import paymentRoutes from "./routes/payment.routes.js"
+import storeRoutes from "./routes/store.routes.js"
+import productRoutes from "./routes/product.routes.js"
+import countryRoutes from "./routes/country.routes.js"
 import errorHandler from "./middleware/error.middleware.js"
 import notFoundHandler from "./middleware/not-found.middleware.js"
 import ApiError from "./common/error.js"
-import { BAD_REQUEST } from "./common/constants.js"
 
 const app = express()
 
@@ -23,13 +26,16 @@ app.use(express.json({
         try {
             JSON.parse(buf)
         } catch (err) {
-            throw new ApiError(BAD_REQUEST, "Invalid JSON")
+            throw new ApiError("Invalid JSON", StatusCodes.BAD_REQUEST)
         }
     }
 }))
 app.use(usersRoutes)
 app.use(rolesRoutes)
 app.use(paymentRoutes)
+app.use(storeRoutes)
+app.use(productRoutes)
+app.use(countryRoutes)
 app.use(notFoundHandler)
 app.use(errorHandler)
 

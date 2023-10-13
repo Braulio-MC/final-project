@@ -1,8 +1,7 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import orderDetails from "./order-details.js"
 
-const orderStatus = sequelize.define("order_status", {
+const orderStatuses = sequelize.define("order_statuses", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -22,12 +21,4 @@ const orderStatus = sequelize.define("order_status", {
     }
 })
 
-orderStatus.hasMany(orderDetails, {
-    foreignKey: "order_status_id"
-})
-
-orderDetails.belongsTo(orderStatus, {
-    foreignKey: "order_status_id"
-})
-
-export default orderStatus
+export default orderStatuses

@@ -1,9 +1,11 @@
 import { validationResult } from "express-validator"
 import auth0Management from "../common/auth0.js"
 import { auth0Vars } from "../config/configuration.js"
-import { response } from "../common/utils.js"
-import { OK, NO_CONTENT, UNPROCESSABLE_CONTENT } from "../common/constants.js"
+import users from "../models/user.js"
 import ApiError from "../common/error.js"
+import { response } from "../common/utils.js"
+
+// TODO update HTTP status codes
 
 export const createUser = async (req, res, next) => {
     const { 
@@ -46,17 +48,18 @@ export const createUser = async (req, res, next) => {
     })
     .then((user) => {
         res.status(OK).json(response(OK, user))
+        users.create({ id: user_id })
     })
     .catch((err) => {
-        const error = new ApiError(err.statusCode, err.message, { name: err.name })
+        const error = new ApiError(err.message, err.statusCode)
         next(error)
     })
 }
 
 export const readUsers = async (req, res, next) => {
     await auth0Management.getUsers()
-    .then((users) => {
-        res.status(OK).json(response(OK, users))
+    .then(async (users) => {
+        await res.status(OK).json(response(OK, users))
     })
     .catch((err) => {
         const error = new ApiError(err.statusCode, err.message, { name: err.name })
@@ -179,7 +182,7 @@ export const deleteUserPermissions = async (req, res, next) => {
         let { permissions } = req.body
         permissions = permissions.map(perm => ({
             permission_name: perm, 
-            resource_server_identifier: auth0Vars.apiAudience  // Possible error if empty
+            resource_server_identifier: auth0Vars.apiAudience  // Error if empty
         }))
         await auth0Management.removePermissionsFromUser({ id }, { permissions })
         .then(() => {

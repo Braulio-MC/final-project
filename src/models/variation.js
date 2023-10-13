@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import variationOption from "./variation-option.js"
+import productCategories from "./product-category.js"
 
-const variation = sequelize.define("variation", {
+const variations = sequelize.define("variations", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -13,6 +13,7 @@ const variation = sequelize.define("variation", {
         type: DataTypes.STRING,
         allowNull: false
     }
+    // category_id
 })
 
 /*
@@ -24,12 +25,12 @@ const variation = sequelize.define("variation", {
  Linked to a product category
  */
 
-variation.hasMany(variationOption, {
-    foreignKey: "variation_id",
+productCategories.hasMany(variations, {
+    foreignKey: "category_id",
 })
 
-variationOption.belongsTo(variation, {
-    foreignKey: "variation_id",
+variations.belongsTo(productCategories, {
+    foreignKey: "category_id",
 })
 
-export default variation
+export default variations

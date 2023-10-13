@@ -1,7 +1,8 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
+import stores from "./store.js"
 
-const promotion = sequelize.define("promotion", {
+const promotions = sequelize.define("promotions", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -24,7 +25,7 @@ const promotion = sequelize.define("promotion", {
         validate: {
             min: {
                 args: [0],
-                msg: "Discount rate must be greater than 0"
+                msg: "Discount rate must be greater or equal to 0"
             },
             max: {
                 args: [100],
@@ -34,7 +35,6 @@ const promotion = sequelize.define("promotion", {
     },
     active: {
         type: DataTypes.BOOLEAN,
-        defaultValue: true,
         allowNull: false
     },
     start_date: {
@@ -44,7 +44,16 @@ const promotion = sequelize.define("promotion", {
     end_date: {  // validate greater than start date
         type: DataTypes.DATE,
         allowNull: false
-    },
+    }
+    // store_id
 })
 
-export default promotion
+stores.hasMany(promotions, {
+    foreignKey: "store_id"
+})
+
+promotions.belongsTo(stores, {
+    foreignKey: "store_id"
+})
+
+export default promotions

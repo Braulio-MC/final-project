@@ -1,6 +1,6 @@
 import Stripe from "stripe"
+import { StatusCodes } from "http-status-codes"
 import { validationResult } from "express-validator"
-import { UNPROCESSABLE_CONTENT } from "../common/constants.js"
 import ApiError from "../common/error.js"
 import product from "../models/product.js"
 
@@ -30,7 +30,7 @@ export const checkout = async (req, res, next) => {
             cancel_url: ""
         })
     } else {
-        const error = new ApiError(UNPROCESSABLE_CONTENT, errors.array(), { name: "Unprocessable Content" })
+        const error = new ApiError(errors.array(), StatusCodes.UNPROCESSABLE_ENTITY)
         next(error)
     }
 }

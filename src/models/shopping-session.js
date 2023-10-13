@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import shoppingCartItem from "./shopping-session-item.js"
+import users from "./user.js"
 
-const shoppingSession = sequelize.define("shopping_session", {
+const shoppingSessions = sequelize.define("shopping_sessions", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -10,23 +10,24 @@ const shoppingSession = sequelize.define("shopping_session", {
         allowNull: false
     },
     total: {
-        type: DataTypes.DOUBLE,
+        type: DataTypes.FLOAT,
         allowNull: false,
         validate: {
             min: {
                 args: [0],
-                msg: "Total must be greater or equal to 0"
+                msg: "Total must be greater than 0"
             }
         }
     }
+    // user_id
 })
 
-shoppingSession.hasMany(shoppingCartItem, {
-    foreignKey: "shopping_session_id",
+users.hasOne(shoppingSessions, {
+    foreignKey: "user_id"
 })
 
-shoppingCartItem.belongsTo(shoppingSession, {
-    foreignKey: "shopping_session_id",
+shoppingSessions.belongsTo(users, {
+    foreignKey: "user_id"
 })
 
-export default shoppingSession
+export default shoppingSessions

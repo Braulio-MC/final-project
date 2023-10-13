@@ -1,7 +1,9 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
+import paymentTypes from "./payment-type.js"
+import users from "./user.js"
 
-const userPaymentMethod = sequelize.define("user_payment_method", {
+const userPaymentMethods = sequelize.define("user_payment_methods", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -17,6 +19,24 @@ const userPaymentMethod = sequelize.define("user_payment_method", {
         defaultValue: false,
         allowNull: false
     }
+    // payment_type_id
+    // user_id
 })
 
-export default userPaymentMethod
+paymentTypes.hasMany(userPaymentMethods, {
+    foreignKey: "payment_type_id"
+})
+
+userPaymentMethods.belongsTo(paymentTypes, {
+    foreignKey: "payment_type_id"
+})
+
+users.hasMany(userPaymentMethods, {
+    foreignKey: "user_id"
+})
+
+userPaymentMethods.belongsTo(users, {
+    foreignKey: "user_id"
+})
+
+export default userPaymentMethods

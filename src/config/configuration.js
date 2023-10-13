@@ -2,6 +2,11 @@ import { config } from "dotenv"
 
 config()
 
+export const appVars = {
+    develPort: process.env.DEVEL_PORT,
+    prodPort: process.env.PROD_PORT
+}
+
 export const auth0Vars = {
     issuer: process.env.AUTH0_ISSUER_BASE_URL,
     apiAudience: process.env.AUTH0_API_AUDIENCE,

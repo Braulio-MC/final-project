@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import product from "./product.js"
+import stores from "./store.js"
 
-const productInventory = sequelize.define("product_inventory", {
+const productInventories = sequelize.define("product_inventories", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -19,14 +19,15 @@ const productInventory = sequelize.define("product_inventory", {
             }
         }
     }
+    // store_id
 })
 
-productInventory.hasOne(product, {
-    foreignKey: "inventory_id"
+stores.hasMany(productInventories, {
+    foreignKey: "store_id"
 })
 
-product.belongsTo(productInventory, {
-    foreignKey: "inventory_id"
+productInventories.belongsTo(stores, {
+    foreignKey: "store_id"
 })
 
-export default productInventory
+export default productInventories

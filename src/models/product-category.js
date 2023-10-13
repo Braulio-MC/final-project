@@ -1,9 +1,9 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import product from "./product.js"
-import variation from "./variation.js"
+import promotions from "./promotion.js"
+import stores from "./store.js"
 
-const productCategory = sequelize.define("product_category", {
+const productCategories = sequelize.define("product_categories", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -15,9 +15,12 @@ const productCategory = sequelize.define("product_category", {
         allowNull: false,
         unique: true
     }
+    // parent_category_id
+    // promotion_id
+    // store_id
 })
 
-productCategory.hasMany(productCategory, {
+productCategories.hasMany(productCategories, {
     foreignKey: {
         name: "parent_category_id",
         allowNull: true
@@ -25,7 +28,7 @@ productCategory.hasMany(productCategory, {
     as: "child_categories"
 })
 
-productCategory.belongsTo(productCategory, {
+productCategories.belongsTo(productCategories, {
     foreignKey: {
         name: "parent_category_id",
         allowNull: true
@@ -33,20 +36,20 @@ productCategory.belongsTo(productCategory, {
     as: "parent_categories"
 })
 
-productCategory.hasMany(product, {
-    foreignKey: "category_id",
+promotions.hasMany(productCategories, {
+    foreignKey: "promotion_id"
 })
 
-product.belongsTo(productCategory, {
-    foreignKey: "category_id",
+productCategories.belongsTo(promotions, {
+    foreignKey: "promotion_id"
 })
 
-productCategory.hasMany(variation, {
-    foreignKey: "category_id",
+stores.hasMany(productCategories, {
+    foreignKey: "store_id"
 })
 
-variation.belongsTo(productCategory, {
-    foreignKey: "category_id",
+productCategories.belongsTo(stores, {
+    foreignKey: "store_id"
 })
 
-export default productCategory
+export default productCategories

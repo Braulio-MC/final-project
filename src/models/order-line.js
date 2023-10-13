@@ -1,7 +1,9 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
+import orderDetails from "./order-details.js"
+import products from "./product.js"
 
-const orderLine = sequelize.define("order_line", {
+const orderLines = sequelize.define("order_lines", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -14,30 +16,38 @@ const orderLine = sequelize.define("order_line", {
         validate: {
             min: {
                 args: [0],
-                msg: "Minimun quantity must be equal to 0"
+                msg: "Minimum quantity cannot be less than 0"
             }
         }
     },
     total: {
-        type: DataTypes.DOUBLE,
+        type: DataTypes.FLOAT,
         allowNull: false,
         validate: {
             min: {
                 args: [0],
-                msg: "Price cannot be less than 0"
+                msg: "Total cannot be less than 0"
             }
         }
     }
+    // order_id
+    // product_id
 })
 
-// orderLine.findAll({
-//     include: {
-//         model: "",
-//         as: "Reviews",
-//         where: {
-//             product_id: ""
-//         }
-//     }
-// })
+orderDetails.hasMany(orderLines, {
+    foreignKey: "order_id"
+})
 
-export default orderLine
+orderLines.belongsTo(orderDetails, {
+    foreignKey: "order_id"
+})
+
+products.hasMany(orderLines, {
+    foreignKey: "product_id"
+})
+
+orderLines.belongsTo(products, {
+    foreignKey: "product_id"
+})
+
+export default orderLines

@@ -1,7 +1,9 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
+import shoppingSessions from "./shopping-session.js"
+import products from "./product.js"
 
-const shoppingSessionItem = sequelize.define("shopping_session_item", {
+const shoppingSessionItems = sequelize.define("shopping_session_items", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -18,6 +20,24 @@ const shoppingSessionItem = sequelize.define("shopping_session_item", {
             }
         }
     }
+    // product_id
+    // shopping_session_id
 })
 
-export default shoppingSessionItem
+products.hasOne(shoppingSessionItems, {
+    foreignKey: "product_id"
+})
+
+shoppingSessionItems.belongsTo(products, {
+    foreignKey: "product_id"
+})
+
+shoppingSessions.hasMany(shoppingSessionItems, {
+    foreignKey: "shopping_session_id",
+})
+
+shoppingSessionItems.belongsTo(shoppingSessions, {
+    foreignKey: "shopping_session_id",
+})
+
+export default shoppingSessionItems

@@ -1,7 +1,8 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
+import users from "./user.js"
 
-const paymentTypes = sequelize.define("payment_types", {
+const stores = sequelize.define("stores", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -18,7 +19,25 @@ const paymentTypes = sequelize.define("payment_types", {
             length: "medium"
         }),
         allowNull: false
+    },
+    image: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            isUrl: {
+                msg: "An URL format was expected"
+            }
+        }
     }
+    // user_id
 })
 
-export default paymentTypes
+users.hasMany(stores, {
+    foreignKey: "user_id"
+})
+
+stores.belongsTo(users, {
+    foreignKey: "user_id"
+})
+
+export default stores

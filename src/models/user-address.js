@@ -1,9 +1,9 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import user from "./user.js"
-import address from "./address.js"
+import users from "./user.js"
+import addresses from "./address.js"
 
-const userAddress = sequelize.define("user_address", {
+const userAddresses = sequelize.define("user_addresses", {
     is_default: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -11,7 +11,14 @@ const userAddress = sequelize.define("user_address", {
     }
 })
 
-user.belongsToMany(address, { through: userAddress })
-address.belongsToMany(user, { through: userAddress })
+users.belongsToMany(addresses, { 
+    through: userAddresses,
+    foreignKey: "user_id"
+})
 
-export default userAddress
+addresses.belongsToMany(users, { 
+    through: userAddresses,
+    foreignKey: "address_id"
+})
+
+export default userAddresses

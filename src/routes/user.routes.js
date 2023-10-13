@@ -15,7 +15,7 @@ import {
     readUserRoles,
     addRolesToUser,
     deleteUserRoles
-} from "../controllers/users.controller.js"
+} from "../controllers/user.controller.js"
 import { 
     addPermissionsToUserValidation, 
     deleteUserPermissionsValidation 
@@ -42,24 +42,14 @@ router.get("/users/:id", readUser)
 router.put("/users/:id", updateUser)
 router.delete("/users/:id", deleteUser)
 
-// get permissions
 router.get("/users/:id/permissions", readUserPermissions)
-// assign permissions
 router.post("/users/:id/permissions", addPermissionsToUserValidation, addPermissionsToUser)
-// delete permissions
 router.delete("/users/:id/permissions", deleteUserPermissionsValidation, deleteUserPermissions)
 
-// get roles
 router.get("/users/:id/roles", readUserRoles)
-// assing roles
 router.post("/users/:id/roles", addRolesToUser)
-// delete roles
 router.delete("/users/:id/roles", deleteUserRoles)
 
 // router.post("/users", checkAccessToken, checkRequiredPermissions([usersPermissions.create]), createUser)
-// router.get("/users", checkAccessToken, checkRequiredPermissions([usersPermissions.read]), readUsers)
-// router.get("/users/:id", checkAccessToken, checkRequiredPermissions([usersPermissions.read]), readUser)
-// router.put("/users/:id", checkAccessToken, checkRequiredPermissions([usersPermissions.update]), updateUser)
-// router.delete("/users/:id", checkAccessToken, checkRequiredPermissions([usersPermissions.delete]), deleteUser)
 
 export default router

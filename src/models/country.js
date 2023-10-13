@@ -1,8 +1,7 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import address from "./address.js"
 
-const country = sequelize.define("country", {
+const countries = sequelize.define("countries", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -21,12 +20,4 @@ const country = sequelize.define("country", {
     }
 })
 
-country.hasMany(address, {
-    foreignKey: "country_id",
-})
-
-address.belongsTo(country, {
-    foreignKey: "country_id",
-})
-
-export default country
+export default countries

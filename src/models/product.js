@@ -1,10 +1,10 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../database/connection.js"
-import promotion from "./promotion.js"
-import shoppingSessionItem from "./shopping-session-item.js"
-import orderLine from "./order-line.js"
+import productCategories from "./product-category.js"
+import promotions from "./promotion.js"
+import productInventories from "./product-inventory.js"
 
-const product = sequelize.define("product", {
+const products = sequelize.define("products", {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -36,41 +36,42 @@ const product = sequelize.define("product", {
         }
     },
     price: {
-        type: DataTypes.DOUBLE,
+        type: DataTypes.FLOAT,
         allowNull: false,
         validate: {
             min: {
                 args: [0],
-                msg: "Minimum price must be equal to 0"
+                msg: "Minimum price cannot be less than 0"
             }
         }
     }
+    // category_id
+    // promotion_id
+    // inventory_id
 })
 
-product.hasOne(shoppingSessionItem, {
-    foreignKey: "product_id"
+productCategories.hasMany(products, {
+    foreignKey: "category_id"
 })
 
-shoppingSessionItem.belongsTo(product, {
-    foreignKey: "product_id"
+products.belongsTo(productCategories, {
+    foreignKey: "category_id"
 })
 
-product.hasOne(orderLine, {
-    foreignKey: "product_id"
+promotions.hasMany(products, {
+    foreignKey: "promotion_id"
 })
 
-orderLine.belongsTo(product, {
-    foreignKey: "product_id"
+products.belongsTo(promotions, {
+    foreignKey: "promotion_id"
 })
 
-// product.hasOne(promotion, {
-//     foreignKey: "promotion_id",
-//     sourceKey: "id"
-// })
+productInventories.hasOne(products, {
+    foreignKey: "inventory_id"
+})
 
-// promotion.belongsTo(product, {
-//     foreignKey: "promotion_id", 
-//     targetKey: "id"
-// })
+products.belongsTo(productInventories, {
+    foreignKey: "inventory_id"
+})
 
-export default product
+export default products

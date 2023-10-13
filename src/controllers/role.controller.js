@@ -1,8 +1,9 @@
 import auth0Management from "../common/auth0.js"
 import { auth0Vars } from "../config/configuration.js"
 import { response } from "../common/utils.js"
-import { OK, NO_CONTENT } from "../common/constants.js"
 import ApiError from "../common/error.js"
+
+// TODO update HTTP status codes
 
 /**
  * @description receives name and description as req.body
