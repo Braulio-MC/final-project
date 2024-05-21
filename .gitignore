@@ -133,5 +133,7 @@ dist
 .idea/
 .vs/
 
-# Resources directory
+# extras
 resources/
+firebase.json
+firebase/

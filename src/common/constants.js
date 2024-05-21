@@ -1,6 +1,0 @@
-export const HTTP_UNKNOWN = "Unknown"
-export const HTTP_INFORMATIONAL = "Informational"
-export const HTTP_SUCCESSFUL = "Successful"
-export const HTTP_REDIRECTION = "Redirection"
-export const HTTP_CLIENT_ERROR = "Client error"
-export const HTTP_SERVER_ERROR = "Server error"
