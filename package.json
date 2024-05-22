@@ -1,10 +1,12 @@
 {
   "name": "api",
-  "version": "1.0.0",
-  "main": "index.ts",
+  "version": "2.0.1",
+  "main": "build/index.js",
   "scripts": {
-    "start": "node build/index.ts",
-    "dev": "nodemon --exec node --loader ts-node/esm src/index.ts"
+    "start": "node build/index.js",
+    "build": "tsc",
+    "dev": "nodemon --exec node --loader ts-node/esm src/index.ts",
+    "deploy": "firebase deploy --only functions"
   },
   "keywords": [],
   "author": "",
@@ -48,5 +50,8 @@
     "extends": [
       "./node_modules/ts-standard/eslintrc.json"
     ]
+  },
+  "engines": {
+    "node": "18"
   }
 }
