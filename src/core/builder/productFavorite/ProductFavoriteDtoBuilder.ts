@@ -40,7 +40,7 @@ export default class ProductFavoriteDtoBuilder implements IProductFavoriteDtoBui
     return this
   }
 
-  setProductImage (image: URL): IProductFavoriteDtoBuilder {
+  setProductImage (image: string): IProductFavoriteDtoBuilder {
     this.productFavoriteDto.productImage = image
     return this
   }

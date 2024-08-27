@@ -8,4 +8,8 @@ export default class FieldPath {
   public value (): string[] {
     return this._value
   }
+
+  toRedisKey (): string {
+    return this._value.join('.')
+  }
 }

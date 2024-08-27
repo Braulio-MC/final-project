@@ -1,6 +1,6 @@
 export default interface OrderLineProduct {
   id: string
   name: string
-  image: URL
+  image: string
   price: number
 }

@@ -3,19 +3,22 @@ import { Router } from 'express'
 //   checkAccessToken,
 //   checkRequiredPermissions
 // } from '../middleware/auth0.middleware'
-import { criteriaValidation, pagingValidation, productsValidation, searchValidation } from '../validation/validator'
+import { criteriaValidation, pagingValidation, productsValidation } from '../validation/validator'
 import { productController } from '../di/Container'
+import { multerUpload } from '../core/MulterHelper'
 
 const router = Router()
 
 router.post(
   '/products',
   productsValidation.createProduct,
+  multerUpload.single('image'),
   productController.create.bind(productController)
 )
 router.put(
   '/products/:id',
   productsValidation.updateProduct,
+  multerUpload.single('image'),
   productController.update.bind(productController)
 )
 router.delete(
@@ -32,14 +35,14 @@ router.get(
   productController.paging.bind(productController)
 )
 router.post(
+  '/products/exists/criteria',
+  criteriaValidation,
+  productController.existsByCriteria.bind(productController)
+)
+router.post(
   '/products/criteria',
   criteriaValidation,
   productController.pagingByCriteria.bind(productController)
-)
-router.get(
-  '/products/search',
-  searchValidation,
-  productController.search.bind(productController)
 )
 
 export default router

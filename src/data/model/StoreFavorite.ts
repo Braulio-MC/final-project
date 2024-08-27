@@ -3,7 +3,7 @@ export default interface StoreFavorite {
   userId: string
   storeId: string
   name: string
-  image: URL
+  image: string
   description: string
   email: string
   phoneNumber: string

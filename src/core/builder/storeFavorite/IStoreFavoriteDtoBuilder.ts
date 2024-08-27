@@ -5,7 +5,7 @@ export default interface IStoreFavoriteDtoBuilder extends IBaseBuilder<IStoreFav
   setUserId: (id: string) => IStoreFavoriteDtoBuilder
   setStoreId: (id: string) => IStoreFavoriteDtoBuilder
   setName: (name: string) => IStoreFavoriteDtoBuilder
-  setImage: (image: URL) => IStoreFavoriteDtoBuilder
+  setImage: (image: string) => IStoreFavoriteDtoBuilder
   setDescription: (description: string) => IStoreFavoriteDtoBuilder
   setEmail: (email: string) => IStoreFavoriteDtoBuilder
   setPhoneNumber: (phoneNumber: string) => IStoreFavoriteDtoBuilder

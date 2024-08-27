@@ -26,4 +26,8 @@ export default class FilterOperator extends EnumValueObject<FilterOperators> {
   protected throwErrorForInvalidEnumValue (value: FilterOperators): void {
     throw new Error(`The filter operator ${value} is invalid`)
   }
+
+  public toRedisKey (): string {
+    return this.value
+  }
 }

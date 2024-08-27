@@ -6,7 +6,7 @@ import OrderPaymentMethodDto from './OrderPaymentMethodDto'
 
 export default interface OrderDto {
   id: string | undefined
-  status: string | undefined
+  status: string | undefined // Change to a dedicated status type as in ChatMessageDto/senderType
   total: number | undefined
   createdAt: Timestamp | undefined
   updatedAt: Timestamp | undefined

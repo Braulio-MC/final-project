@@ -20,8 +20,9 @@ export default class FirestoreStoreFavoriteRepository implements IStoreFavoriteR
     this._collectionRef = this.firestoreDB.collection(this._collectionName) as CollectionReference<StoreFavoriteDto>
   }
 
-  async create (item: StoreFavoriteDto): Promise<void> {
-    await this._collectionRef.add(item)
+  async create (item: StoreFavoriteDto): Promise<string> {
+    const documentRef = await this._collectionRef.add(item)
+    return documentRef.id
   }
 
   async update (id: string, item: Partial<StoreFavoriteDto>): Promise<void> {
@@ -87,6 +88,20 @@ export default class FirestoreStoreFavoriteRepository implements IStoreFavoriteR
 
   async delete (id: string): Promise<void> {
     await this._collectionRef.doc(id).delete()
+  }
+
+  async existsByCriteria (criteria: Criteria): Promise<boolean> {
+    const convertResult = this.converter.convert(criteria)
+    let ref = this._collectionRef.orderBy(this._paginationKey)
+    convertResult.filters.forEach(filter => {
+      ref = ref.where(filter.field, filter.operator, filter.value)
+    })
+    const limit = convertResult.limit
+    if (convertResult.sort.field !== '') {
+      ref = ref.orderBy(convertResult.sort.field, convertResult.sort.direction)
+    }
+    const querySnapshot = await ref.select('createdAt').limit(limit).get()
+    return !querySnapshot.empty
   }
 
   async pagingByCriteria (criteria: Criteria): Promise<PagingResult<StoreFavoriteDto>> {

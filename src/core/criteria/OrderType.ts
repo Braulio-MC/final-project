@@ -30,4 +30,8 @@ export default class OrderType extends EnumValueObject<OrderTypes> {
   protected throwErrorForInvalidEnumValue (value: OrderTypes): void {
     throw new Error(`The order type ${value} is invalid`)
   }
+
+  toRedisKey (): string {
+    return this.value
+  }
 }

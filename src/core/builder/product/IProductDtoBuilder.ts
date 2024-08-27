@@ -5,7 +5,7 @@ import ProductDto from '../../../data/dto/ProductDto'
 export default interface IProductDtoBuilder extends IBaseBuilder<IProductDtoBuilder, ProductDto> {
   setName: (name: string) => IProductDtoBuilder
   setDescription: (description: string) => IProductDtoBuilder
-  setImage: (image: URL) => IProductDtoBuilder
+  setImage: (image: string) => IProductDtoBuilder
   setPrice: (price: number) => IProductDtoBuilder
   setQuantity: (quantity: number) => IProductDtoBuilder
   setStoreID: (id: string) => IProductDtoBuilder

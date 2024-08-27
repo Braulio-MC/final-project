@@ -3,7 +3,7 @@ export default interface ProductFavorite {
   userId: string
   productId: string
   productName: string
-  productImage: URL
+  productImage: string
   productDescription: string
   createdAt: Date
   updatedAt: Date

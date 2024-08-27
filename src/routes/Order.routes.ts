@@ -28,6 +28,11 @@ router.get(
   orderController.paging.bind(orderController)
 )
 router.post(
+  '/orders/exists/criteria',
+  criteriaValidation,
+  orderController.existsByCriteria.bind(orderController)
+)
+router.post(
   '/orders/criteria',
   criteriaValidation,
   orderController.pagingByCriteria.bind(orderController)

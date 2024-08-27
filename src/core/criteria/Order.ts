@@ -17,4 +17,8 @@ export default class Order {
   public hasOrder (): boolean {
     return !this.orderType.isNone()
   }
+
+  toRedisKey (): string {
+    return `${this.orderBy}_${this.orderType.toRedisKey()}`
+  }
 }

@@ -70,8 +70,8 @@ export default class PaymentController implements IController {
         .setPaginationKey(randomUUID())
         .build()
       this.service.create(newPaymentType)
-        .then(_ => {
-          res.sendStatus(StatusCodes.CREATED)
+        .then(id => {
+          res.status(StatusCodes.CREATED).json(id)
         })
         .catch(e => {
           const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
@@ -161,6 +161,30 @@ export default class PaymentController implements IController {
     }
   }
 
+  async existsByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
+    const errors = validationResult(req).formatWith(expressErrorFormatter)
+    if (errors.isEmpty()) {
+      try {
+        const { filters, order } = req.body
+        const filterList = new Filters()
+        filters.forEach(({ field, operator, value }: { field: string[], operator: string, value: any }) => {
+          filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
+        })
+        const sort = Order.fromValues(order.orderBy, order.orderType)
+        const criteria = new Criteria(filterList, 1, sort)
+        const payment = await this.service.existsByCriteria(criteria)
+        res.status(StatusCodes.OK).json(payment)
+      } catch (e: any) {
+        const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
+        next(error)
+      }
+    } else {
+      const errorsFormat = errors.array().join(', ')
+      const error = new ErrorResponse(errorsFormat, StatusCodes.BAD_REQUEST)
+      next(error)
+    }
+  }
+
   async pagingByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
@@ -177,7 +201,7 @@ export default class PaymentController implements IController {
           filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
         })
         const sort = Order.fromValues(order.orderBy, order.orderType)
-        const criteria = new Criteria(filterList, sort, limit, after, before)
+        const criteria = new Criteria(filterList, limit, sort, after, before)
         const payments = await this.service.pagingByCriteria(criteria)
         res.status(StatusCodes.OK).json(payments)
       } catch (e: any) {

@@ -1,63 +1,12 @@
-import { body, param, query } from 'express-validator'
+import { body, query } from 'express-validator'
 import { StatusCodes } from 'http-status-codes'
 import FilterOperators from '../core/criteria/FilterOperators'
 import OrderTypes from '../core/criteria/OrderTypes'
 import ErrorResponse from '../core/ErrorResponse'
-
-export const usersValidation = {
-  addPermissionsToUser: [
-    body('permissions', "Array with name 'permissions' and min length of one expected").isArray({ min: 1 }),
-    body('permissions.*', 'Invalid empty value').notEmpty(),
-    body('permissions.*', 'String field expected').isString(),
-    body('permissions.*', 'String does not match permission format').matches('[a-z]:[a-z]')
-  ],
-  deleteUserPermissions: [
-    body('permissions', "Array with name 'permissions' and min length of one expected").isArray({ min: 1 }),
-    body('permissions.*', 'Invalid empty value').notEmpty(),
-    body('permissions.*', 'String field expected').isString(),
-    body('permissions.*', 'String does not match permission format').matches('[a-z]:[a-z]')
-  ],
-  createUserFavoriteStore: [
-    param('id', 'User ID expected').notEmpty(),
-    param('id', 'User ID must be string').isString(),
-    body('store_id', 'Store ID expected').notEmpty(),
-    body('store_id', 'Store ID must be string').isString(),
-    body('name', 'Store name expected').notEmpty(),
-    body('name', 'Store name must be string').isString(),
-    body('image', 'Store image expected').notEmpty(),
-    body('image', 'Store image must be URL').isURL(),
-    body('description', 'Store description expected').notEmpty(),
-    body('description', 'Store description must be string').isString(),
-    body('email', 'Store email expected').notEmpty(),
-    body('email', 'Store email must be email').isEmail(),
-    body('phone_number', 'Store phone number expected').notEmpty(),
-    body('phone_number', 'Store phone number must be mobile phone').isMobilePhone('es-MX')
-  ],
-  deleteUserFavoriteStore: [
-    param('id', 'User ID expected').notEmpty(),
-    param('id', 'User ID must be string').isString(),
-    param('storeId', 'Store ID expected').notEmpty(),
-    param('storeId', 'Store ID must be string').isString()
-  ],
-  createUserFavoriteProduct: [
-    param('id', 'User ID expected').notEmpty(),
-    param('id', 'User ID must be string').isString(),
-    body('product_id', 'Product ID expected').notEmpty(),
-    body('product_id', 'Product ID must be string').isString(),
-    body('name', 'Product name expected').notEmpty(),
-    body('name', 'Product name must be string').isString(),
-    body('image', 'Product image expected').notEmpty(),
-    body('image', 'Product image must be URL').isURL(),
-    body('description', 'Product description expected').notEmpty(),
-    body('description', 'Product description must be string').isString()
-  ],
-  deleteUserFavoriteProduct: [
-    param('id', 'User ID expected').notEmpty(),
-    param('id', 'User ID must be string').isString(),
-    param('productId', 'Product ID expected').notEmpty(),
-    param('productId', 'Product ID must be string').isString()
-  ]
-}
+import { firestoreConfig } from '../core/Configuration'
+import OrderStatuses from '../core/OrderStatuses'
+import GetStreamMessagingChannelTypes from '../core/GetStreamMessagingChannelTypes'
+import GetStreamMessagingUserRoleTypes from '../core/GetStreamMessagingUserRoleTypes'
 
 export const paymentsValidation = {
   checkout: [
@@ -81,32 +30,38 @@ export const paymentsValidation = {
 
 export const storesValidation = {
   createStore: [
-    body('name', 'Name expected').notEmpty(),
-    body('name', 'Name must be string').isString(),
-    body('description', 'Description expected').notEmpty(),
-    body('description', 'Description must be string').isString(),
-    body('email', 'Email expected').notEmpty(),
-    body('email', 'Email must be email').isEmail(),
-    body('phoneNumber', 'Phone number expected').notEmpty(),
-    body('phoneNumber', 'Phone number must be mobile phone').isMobilePhone('es-MX'),
-    body('image', 'Image expected').notEmpty(),
-    body('image', 'Image must be URL format').isURL(),
-    body('userId', 'User ID expected').notEmpty(),
-    body('userId', 'User ID must be string').isString()
+    body('name')
+      .notEmpty().withMessage('Name expected')
+      .isString().withMessage('Name must be string'),
+    body('description')
+      .notEmpty().withMessage('Description expected')
+      .isString().withMessage('Description must be string'),
+    body('email')
+      .notEmpty().withMessage('Email expected')
+      .isEmail().withMessage('Email must be email'),
+    body('phoneNumber')
+      .notEmpty().withMessage('Phone number expected')
+      .isMobilePhone('es-MX').withMessage('Phone number must be mobile phone'),
+    body('userId')
+      .notEmpty().withMessage('User ID expected')
+      .isString().withMessage('User ID must be string')
   ],
   updateStore: [
-    body('name', 'Name expected').notEmpty(),
-    body('name', 'Name must be string').isString(),
-    body('description', 'Description expected').notEmpty(),
-    body('description', 'Description must be string').isString(),
-    body('email', 'Email expected').notEmpty(),
-    body('email', 'Email must be email').isEmail(),
-    body('phoneNumber', 'Phone number expected').notEmpty(),
-    body('phoneNumber', 'Phone number must be mobile phone').isMobilePhone('es-MX'),
-    body('image', 'Image expected').notEmpty(),
-    body('image', 'Image must be URL format').isURL(),
-    body('userId', 'User ID expected').notEmpty(),
-    body('userId', 'User ID must be string').isString()
+    body('name')
+      .notEmpty().withMessage('Name expected')
+      .isString().withMessage('Name must be string'),
+    body('description')
+      .notEmpty().withMessage('Description expected')
+      .isString().withMessage('Description must be string'),
+    body('email')
+      .notEmpty().withMessage('Email expected')
+      .isEmail().withMessage('Email must be email'),
+    body('phoneNumber')
+      .notEmpty().withMessage('Phone number expected')
+      .isMobilePhone('es-MX').withMessage('Phone number must be mobile phone'),
+    body('userId')
+      .notEmpty().withMessage('User ID expected')
+      .isString().withMessage('User ID must be string')
   ]
 }
 
@@ -149,127 +104,147 @@ export const categoriesValidation = {
 
 export const discountsValidation = {
   createDiscount: [
-    body('percentage', 'Percentage expected').notEmpty(),
-    body('percentage', 'Percentage must be numeric').isNumeric(),
-    body('startDate', 'Start date expected').notEmpty(),
-    body('startDate', 'Start date must be date').toDate().custom((startDate, { req }) => {
-      if (startDate.getTime() > req.body.endDate.getTime()) {
-        throw new ErrorResponse('Start date must be before end date', StatusCodes.BAD_REQUEST)
-      }
-      return true
-    }),
-    body('endDate', 'End date expected').notEmpty(),
-    body('endDate', 'End date must be date').toDate().custom((endDate, { req }) => {
-      if (endDate.getTime() < req.body.startDate.getTime()) {
-        throw new ErrorResponse('End date must be after start date', StatusCodes.BAD_REQUEST)
-      }
-      return true
-    }),
-    body('storeId', 'Store ID expected').notEmpty(),
-    body('storeId', 'Store ID must be string').isString()
+    body('percentage')
+      .isNumeric().withMessage('Percentage must be numeric'),
+    body('startDate')
+      .isNumeric().withMessage('Start date must be timestamp'),
+    body('endDate')
+      .isNumeric().withMessage('End date must be timestamp')
+      .custom((endDate, { req }) => {
+        const start = new Date(req.body.startDate)
+        const end = new Date(endDate)
+        if (start > end) {
+          throw new ErrorResponse('End date must be after start date', StatusCodes.BAD_REQUEST)
+        }
+        return true
+      }),
+    body('storeId')
+      .exists().withMessage('Store ID should exist')
+      .isString().withMessage('Store ID must be string')
   ],
   updateDiscount: [
-    body('percentage', 'Percentage expected').notEmpty(),
-    body('percentage', 'Percentage must be numeric').isNumeric(),
-    body('startDate', 'Start date expected').notEmpty(),
-    body('startDate', 'Start date must be date').toDate().custom((startDate, { req }) => {
-      if (startDate.getTime() > req.body.endDate.getTime()) {
-        throw new ErrorResponse('Start date must be before end date', StatusCodes.BAD_REQUEST)
-      }
-      return true
-    }),
-    body('endDate', 'End date expected').notEmpty(),
-    body('endDate', 'End date must be date').toDate().custom((endDate, { req }) => {
-      if (endDate.getTime() < req.body.startDate.getTime()) {
-        throw new ErrorResponse('End date must be after start date', StatusCodes.BAD_REQUEST)
-      }
-      return true
-    }),
-    body('storeId', 'Store ID expected').notEmpty(),
-    body('storeId', 'Store ID must be string').isString()
+    body('percentage')
+      .isNumeric().withMessage('Percentage must be numeric'),
+    body('startDate')
+      .isNumeric().withMessage('Start date must be timestamp'),
+    body('endDate')
+      .isNumeric().withMessage('End date must be timestamp')
+      .custom((endDate, { req }) => {
+        const start = new Date(req.body.startDate)
+        const end = new Date(endDate)
+        if (start > end) {
+          throw new ErrorResponse('End date must be after start date', StatusCodes.BAD_REQUEST)
+        }
+        return true
+      }),
+    body('storeId')
+      .exists().withMessage('Store ID should exist')
+      .isString().withMessage('Store ID must be string')
   ]
 }
 
 export const productsValidation = {
   createProduct: [
-    body('name', 'Name expected').notEmpty(),
-    body('name', 'Name must be string').isString(),
-    body('description', 'Description expected').notEmpty(),
-    body('description', 'Description must be string').isString(),
-    body('image', 'Image expected').notEmpty(),
-    body('image', 'Image must be URL format').isURL(),
-    body('price', 'Price expected').notEmpty(),
-    body('price', 'Price must be float').isFloat(),
-    body('quantity', 'Quantity expected').notEmpty(),
-    body('quantity', 'Quantity must be numeric').isInt(),
-    body('categoryId', 'Category ID expected').notEmpty(),
-    body('categoryId', 'Category ID must be string').isString(),
-    body('categoryName', 'Category name expected').notEmpty(),
-    body('categoryName', 'Category name must be string').isString(),
-    body('categoryParentName', 'Category parent name expected').exists(),
-    body('categoryParentName', 'Category parent name must be string').isString(),
-    body('storeId', 'Store ID expected').notEmpty(),
-    body('storeId', 'Store ID must be string').isString(),
-    body('storeName', 'Store name expected').notEmpty(),
-    body('storeName', 'Store name must be string').isString(),
-    body('discountId', 'Discount ID expected').exists(),
-    body('discountId', 'Discount ID must be string').isString(),
-    body('discountPercentage', 'Discount percentage expected').exists(),
-    body('discountPercentage', 'Discount percentage must be numeric').default(0).isNumeric(),
-    body('discountStartDate', 'Discount start date expected').exists(),
-    body('discountStartDate', 'Discount start date must be date').toDate().custom((date, { req }) => {
-      if (!(date instanceof Date)) {
-        req.body.discountStartDate = new Date(1970, 0)
-      }
-      return true
-    }),
-    body('discountEndDate', 'Discount end date expected').exists(),
-    body('discountEndDate', 'Discount end date must be date').toDate().custom((date, { req }) => {
-      if (!(date instanceof Date)) {
-        req.body.discountEndDate = new Date(1970, 0)
-      }
-      return true
-    })
+    body('name')
+      .notEmpty().withMessage('Name expected')
+      .isString().withMessage('Name must be string'),
+    body('description')
+      .notEmpty().withMessage('Description expected')
+      .isString().withMessage('Description must be string'),
+    body('price')
+      .isFloat().withMessage('Price must be float')
+      .toFloat(),
+    body('quantity')
+      .isInt().withMessage('Quantity must be integer')
+      .toInt(),
+    body('categoryId')
+      .notEmpty().withMessage('Category ID expected')
+      .isString().withMessage('Category ID must be string'),
+    body('categoryName')
+      .notEmpty().withMessage('Category name expected')
+      .isString().withMessage('Category name must be string'),
+    body('categoryParentName')
+      .exists().withMessage('Category parent name must exist')
+      .default('')
+      .isString().withMessage('Category parent name must be string'),
+    body('storeId')
+      .notEmpty().withMessage('Store ID expected')
+      .isString().withMessage('Store ID must be string'),
+    body('storeName')
+      .notEmpty().withMessage('Store name expected')
+      .isString().withMessage('Store name must be string'),
+    body('discountId')
+      .exists().withMessage('Discount ID must exist')
+      .default(firestoreConfig.discountDefaultId)
+      .isString().withMessage('Discount ID must be string'),
+    body('discountPercentage')
+      .exists().withMessage('Discount percentage must exist')
+      .default(Number.parseInt(firestoreConfig.discountDefaultPercentage as string))
+      .isNumeric().withMessage('Discount percentage must be numeric'),
+    body('discountStartDate')
+      .exists().withMessage('Discount start date must exist')
+      .default(firestoreConfig.discountDefaultDate).toDate(),
+    body('discountEndDate')
+      .exists().withMessage('Discount end date must exist')
+      .default(firestoreConfig.discountDefaultDate)
+      .toDate()
+      .custom((discountEndDate, { req }) => {
+        if (discountEndDate.getTime() > req.body.discountStartDate.getTime()) {
+          throw new ErrorResponse('End date must be after start date', StatusCodes.BAD_REQUEST)
+        }
+        return true
+      })
   ],
   updateProduct: [
-    body('name', 'Name expected').notEmpty(),
-    body('name', 'Name must be string').isString(),
-    body('description', 'Description expected').notEmpty(),
-    body('description', 'Description must be string').isString(),
-    body('image', 'Image expected').notEmpty(),
-    body('image', 'Image must be URL format').isURL(),
-    body('price', 'Price expected').notEmpty(),
-    body('price', 'Price must be float').isFloat(),
-    body('quantity', 'Quantity expected').notEmpty(),
-    body('quantity', 'Quantity must be numeric').isInt(),
-    body('categoryId', 'Category ID expected').notEmpty(),
-    body('categoryId', 'Category ID must be string').isString(),
-    body('categoryName', 'Category name expected').notEmpty(),
-    body('categoryName', 'Category name must be string').isString(),
-    body('categoryParentName', 'Category parent name expected').exists(),
-    body('categoryParentName', 'Category parent name must be string').isString(),
-    body('storeId', 'Store ID expected').notEmpty(),
-    body('storeId', 'Store ID must be string').isString(),
-    body('storeName', 'Store name expected').notEmpty(),
-    body('storeName', 'Store name must be string').isString(),
-    body('discountId', 'Discount ID expected').exists(),
-    body('discountId', 'Discount ID must be string').isString(),
-    body('discountPercentage', 'Discount percentage expected').exists(),
-    body('discountPercentage', 'Discount percentage must be numeric').default(0).isNumeric(),
-    body('discountStartDate', 'Discount start date expected').exists(),
-    body('discountStartDate', 'Discount start date must be date').toDate().custom((date, { req }) => {
-      if (!(date instanceof Date)) {
-        req.body.discountStartDate = new Date(1970, 0)
-      }
-      return true
-    }),
-    body('discountEndDate', 'Discount end date expected').exists(),
-    body('discountEndDate', 'Discount end date must be date').toDate().custom((date, { req }) => {
-      if (!(date instanceof Date)) {
-        req.body.discountEndDate = new Date(1970, 0)
-      }
-      return true
-    })
+    body('name')
+      .notEmpty().withMessage('Name expected')
+      .isString().withMessage('Name must be string'),
+    body('description')
+      .notEmpty().withMessage('Description expected')
+      .isString().withMessage('Description must be string'),
+    body('price')
+      .isFloat().withMessage('Price must be float')
+      .toFloat(),
+    body('quantity')
+      .isInt().withMessage('Quantity must be integer')
+      .toInt(),
+    body('categoryId')
+      .notEmpty().withMessage('Category ID expected')
+      .isString().withMessage('Category ID must be string'),
+    body('categoryName')
+      .notEmpty().withMessage('Category name expected')
+      .isString().withMessage('Category name must be string'),
+    body('categoryParentName')
+      .exists().withMessage('Category parent name must exist')
+      .default('')
+      .isString().withMessage('Category parent name must be string'),
+    body('storeId')
+      .notEmpty().withMessage('Store ID expected')
+      .isString().withMessage('Store ID must be string'),
+    body('storeName')
+      .notEmpty().withMessage('Store name expected')
+      .isString().withMessage('Store name must be string'),
+    body('discountId')
+      .exists().withMessage('Discount ID must exist')
+      .default(firestoreConfig.discountDefaultId)
+      .isString().withMessage('Discount ID must be string'),
+    body('discountPercentage')
+      .exists().withMessage('Discount percentage must exist')
+      .default(Number.parseInt(firestoreConfig.discountDefaultPercentage as string))
+      .isNumeric().withMessage('Discount percentage must be numeric'),
+    body('discountStartDate')
+      .exists().withMessage('Discount start date must exist')
+      .default(firestoreConfig.discountDefaultDate).toDate(),
+    body('discountEndDate')
+      .exists().withMessage('Discount end date must exist')
+      .default(firestoreConfig.discountDefaultDate)
+      .toDate()
+      .custom((discountEndDate, { req }) => {
+        if (discountEndDate.getTime() > req.body.discountStartDate.getTime()) {
+          throw new ErrorResponse('End date must be after start date', StatusCodes.BAD_REQUEST)
+        }
+        return true
+      })
   ]
 }
 
@@ -294,45 +269,79 @@ export const deliveryLocationsValidation = {
 
 export const ordersValidation = {
   createOrder: [
-    body('total', 'Order total expected').notEmpty(),
-    body('total', 'Order total must be float').isFloat(),
-    body('status', 'Status expected').notEmpty(),
-    body('status', 'Status must be string').isString(),
-    body('userId', 'User ID expected').notEmpty(),
-    body('userId', 'User ID must be string').isString(),
-    body('userName', 'User name expected').notEmpty(),
-    body('userName', 'User name must be string').isString(),
-    body('locationId', 'Delivery location ID expected').notEmpty(),
-    body('locationId', 'Delivery location ID must be string').isString(),
-    body('locationName', 'Delivery location name expected').notEmpty(),
-    body('locationName', 'Delivery location name must be string').isString(),
-    body('storeId', 'Store ID expected').notEmpty(),
-    body('storeId', 'Store ID must be string').isString(),
-    body('storeName', 'Store name expected').notEmpty(),
-    body('storeName', 'Store name must be string').isString(),
-    body('paymentId', 'Payment ID expected').notEmpty(),
-    body('paymentId', 'Payment ID must be string').isString(),
-    body('paymentName', 'Payment name expected').notEmpty(),
-    body('paymentName', 'Payment name must be string').isString(),
-    body('orderLines', 'Order lines must be array and contain one item at least').isArray({ min: 1 }),
-    body('orderLines.*.total', 'Order line total expected').notEmpty(),
-    body('orderLines.*.total', 'Order line total must be float').isFloat(),
-    body('orderLines.*.quantity', 'Order line quantity expected').notEmpty(),
-    body('orderLines.*.quantity', 'Order line quantity must be int').isInt(),
-    body('orderLines.*.product', 'Order line product expected').notEmpty(),
-    body('orderLines.*.product', 'Order line product must be object').isObject(),
-    body('orderLines.*.product.id', 'Order line product ID expected').notEmpty(),
-    body('orderLines.*.product.id', 'Order line product ID must be string').isString(),
-    body('orderLines.*.product.name', 'Order line product name expected').notEmpty(),
-    body('orderLines.*.product.name', 'Order line product name must be string').isString(),
-    body('orderLines.*.product.image', 'Order line product image expected').notEmpty(),
-    body('orderLines.*.product.image', 'Order line product image must be URL').isURL(),
-    body('orderLines.*.product.price', 'Order line product price expected').notEmpty(),
-    body('orderLines.*.product.price', 'Order line product price must be float').isFloat()
+    body('total')
+      .isFloat().withMessage('Total must be float'),
+    body('status')
+      .notEmpty().withMessage('Status expected')
+      .isString().withMessage('Status must be string')
+      .isIn(Object.values(OrderStatuses)).withMessage(`Status must be in: ${Object.values(OrderStatuses).join(', ')}`),
+    body('userId')
+      .notEmpty().withMessage('User ID expected')
+      .isString().withMessage('User ID must be string'),
+    body('userName')
+      .notEmpty().withMessage('User name expected')
+      .isString().withMessage('User name must be string'),
+    body('locationId')
+      .notEmpty().withMessage('Delivery location ID expected')
+      .isString().withMessage('Delivery location ID must be string'),
+    body('locationName')
+      .notEmpty().withMessage('Delivery location name expected')
+      .isString().withMessage('Delivery location name must be string'),
+    body('storeId')
+      .notEmpty().withMessage('Store ID expected')
+      .isString().withMessage('Store ID must be string'),
+    body('storeName')
+      .notEmpty().withMessage('Store name expected')
+      .isString().withMessage('Store name must be string'),
+    body('paymentId')
+      .notEmpty().withMessage('Payment ID expected')
+      .isString().withMessage('Payment ID must be string'),
+    body('paymentName')
+      .notEmpty().withMessage('Payment name expected')
+      .isString().withMessage('Payment name must be string')
   ],
   updateOrder: [
-    body('status', 'Status expected').notEmpty(),
-    body('status', 'Status must be string').isString()
+    body('status')
+      .notEmpty().withMessage('Status expected')
+      .isString().withMessage('Status must be string')
+      .isIn(Object.values(OrderStatuses)).withMessage(`Status must be in: ${Object.values(OrderStatuses).join(', ')}`)
+  ]
+}
+
+export const orderlinesValidation = {
+  createOrderline: [
+    body('total')
+      .isFloat().withMessage('Total must be float'),
+    body('quantity')
+      .isInt({ gt: 0 }).withMessage('Quantity must be integer and grater than 0'),
+    body('productId')
+      .notEmpty().withMessage('Product ID expected')
+      .isString().withMessage('Product ID must be string'),
+    body('productName')
+      .notEmpty().withMessage('Product name expected')
+      .isString().withMessage('Product name must be string'),
+    body('productImage')
+      .notEmpty().withMessage('Product image expected')
+      .isURL().withMessage('Product image must be URL format'),
+    body('productPrice')
+      .isFloat().withMessage('Product price must be float')
+  ],
+  updateOrderline: [
+    body('total')
+      .isFloat().withMessage('Total must be float'),
+    body('quantity')
+      .isInt({ gt: 0 }).withMessage('Quantity must be integer and grater than 0'),
+    body('productId')
+      .notEmpty().withMessage('Product ID expected')
+      .isString().withMessage('Product ID must be string'),
+    body('productName')
+      .notEmpty().withMessage('Product name expected')
+      .isString().withMessage('Product name must be string'),
+    body('productImage')
+      .notEmpty().withMessage('Product image expected')
+      .isURL().withMessage('Product image must be URL format'),
+    body('productPrice')
+      .isFloat().withMessage('Product price must be float')
   ]
 }
 
@@ -343,37 +352,35 @@ export const cartsValidation = {
     body('storeId', 'Store ID expected').notEmpty(),
     body('storeId', 'Store ID must be string').isString(),
     body('storeName', 'Store name expected').notEmpty(),
-    body('storeName', 'Store name must be string').isString(),
-    body('products', 'Product list expected').isArray({ min: 1 }),
-    body('products.*.id', 'Product ID expected').notEmpty(),
-    body('products.*.id', 'Product ID must be string').isString(),
-    body('products.*.name', 'Product name expected').notEmpty(),
-    body('products.*.name', 'Product name must be string').isString(),
-    body('products.*.image', 'Product image expected').notEmpty(),
-    body('products.*.image', 'Product image must be URL').isURL(),
-    body('products.*.price', 'Product price expected').notEmpty(),
-    body('products.*.price', 'Product price must be float').isFloat(),
-    body('products.*.quantity', 'Product quantity expected').notEmpty(),
-    body('products.*.quantity', 'Product quantity must be integer').isInt()
+    body('storeName', 'Store name must be string').isString()
   ],
   updateCart: [
-    param('id', 'Cart ID expected as parameter').notEmpty(),
-    param('id', 'Cart ID must be string').isString(),
     body('storeId', 'Store ID expected').notEmpty(),
     body('storeId', 'Store ID must be string').isString(),
     body('storeName', 'Store name expected').notEmpty(),
-    body('storeName', 'Store name must be string').isString(),
-    body('products', 'Product list expected').isArray({ min: 1 }),
-    body('products.*.id', 'Product ID expected').notEmpty(),
-    body('products.*.id', 'Product ID must be string').isString(),
-    body('products.*.name', 'Product name expected').notEmpty(),
-    body('products.*.name', 'Product name must be string').isString(),
-    body('products.*.image', 'Product image expected').notEmpty(),
-    body('products.*.image', 'Product image must be URL').isURL(),
-    body('products.*.price', 'Product price expected').notEmpty(),
-    body('products.*.price', 'Product price must be float').isFloat(),
-    body('products.*.quantity', 'Product quantity expected').notEmpty(),
-    body('products.*.quantity', 'Product quantity must be integer').isInt()
+    body('storeName', 'Store name must be string').isString()
+  ]
+}
+
+export const shoppingCartItemsValidation = {
+  createShoppingCartItem: [
+    body('productId')
+      .notEmpty().withMessage('Product ID expected')
+      .isString().withMessage('Product ID must be string'),
+    body('productName')
+      .notEmpty().withMessage('Product name expected')
+      .isString().withMessage('Product name must be string'),
+    body('productImage')
+      .notEmpty().withMessage('Product image expected')
+      .isURL().withMessage('Product image must be URL format'),
+    body('productPrice')
+      .isFloat().withMessage('Product price must be float'),
+    body('quantity')
+      .isInt({ gt: 0 }).withMessage('Quantity must be integer and grater than 0')
+  ],
+  updateShoppingCartItem: [
+    body('quantity')
+      .isInt({ gt: 0 }).withMessage('Quantity must be integer and grater than 0')
   ]
 }
 
@@ -491,6 +498,14 @@ export const storeFavoritesValidation = {
   ]
 }
 
+export const tokenValidation = {
+  createToken: [
+    body('userId')
+      .notEmpty().withMessage('User ID expected')
+      .isString().withMessage('User ID must be string')
+  ]
+}
+
 export const pagingValidation = [
   query('limit')
     .optional()
@@ -508,6 +523,10 @@ export const searchValidation = [
   query('query')
     .optional()
     .isString().withMessage('Query must be string'),
+  query('page')
+    .optional()
+    .isInt().withMessage('Page must be integer')
+    .toInt(),
   query('perPage')
     .optional()
     .isInt().withMessage('PerPage must be integer')
@@ -553,3 +572,52 @@ export const criteriaValidation = [
     .isIn(Object.values(OrderTypes)).withMessage(`Order type must be in: ${Object.values(OrderTypes).join(', ')}`),
   ...pagingValidation
 ]
+
+export const channelValidation = {
+  createChannel: [
+    body('type')
+      .notEmpty().withMessage('Channel type expected')
+      .isString().withMessage('Channel type must be string')
+      .isIn(Object.values(GetStreamMessagingChannelTypes)).withMessage(`Type must be in: ${Object.values(GetStreamMessagingChannelTypes).join(', ')}`),
+    body('id')
+      .notEmpty().withMessage('Channel ID expected')
+      .isString().withMessage('Channel ID must be string'),
+    body('options')
+      .isObject().withMessage('Options object expected'),
+    body('options.name')
+      .optional()
+      .isString().withMessage('Name must be string'),
+    body('options.blocked')
+      .optional()
+      .isBoolean().withMessage('Blocked must be boolean')
+      .default(false)
+  ],
+  createChannelDistinct: [
+    body('type')
+      .notEmpty().withMessage('Channel type expected')
+      .isString().withMessage('Channel type must be string')
+      .isIn(Object.values(GetStreamMessagingChannelTypes)).withMessage(`Type must be in: ${Object.values(GetStreamMessagingChannelTypes).join(', ')}`),
+    body('members')
+      .isArray({ min: 2 }).withMessage('Members list must contain at least two IDs'),
+    body('members.*')
+      .notEmpty().withMessage('Member ID expected')
+      .isString().withMessage('Member ID must be string')
+  ]
+}
+
+export const userValidation = {
+  createGetStreamUser: [
+    body('users')
+      .isArray({ min: 1 }).withMessage('Users list must contain at least one user'),
+    body('users.*.id')
+      .notEmpty().withMessage('User ID expected')
+      .isString().withMessage('User ID must be string'),
+    body('users.*.name')
+      .notEmpty().withMessage('User name expected')
+      .isString().withMessage('User name must be string'),
+    body('users.*.role')
+      .notEmpty().withMessage('User role expected')
+      .isString().withMessage('User role must be string')
+      .isIn(Object.values(GetStreamMessagingUserRoleTypes)).withMessage(`Role must be in: ${Object.values(GetStreamMessagingUserRoleTypes).join(', ')}`)
+  ]
+}

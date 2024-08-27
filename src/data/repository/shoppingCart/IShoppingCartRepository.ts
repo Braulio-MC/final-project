@@ -1,13 +1,6 @@
-import Criteria from '../../../core/criteria/Criteria'
-import { PagingResult, ShoppingCartResult } from '../../../types'
+import { ShoppingCartResult } from '../../../types'
 import ShoppingCartDto from '../../dto/ShoppingCartDto'
-import ShoppingCartProductDto from '../../dto/ShoppingCartProductDto'
+import IRepository from '../IRepository'
 
-export default interface IShoppingCartRepository {
-  create: (shoppingCart: ShoppingCartDto, products: ShoppingCartProductDto[]) => Promise<void>
-  update: (id: string, shoppingCart: Partial<ShoppingCartDto>, products: ShoppingCartProductDto[]) => Promise<void>
-  paging: (limit: number, after: string, before: string) => Promise<PagingResult<ShoppingCartResult>>
-  findById: (id: string) => Promise<ShoppingCartResult | null>
-  delete: (id: string) => Promise<void>
-  pagingByCriteria: (criteria: Criteria) => Promise<PagingResult<ShoppingCartResult>>
+export default interface IShoppingCartRepository extends IRepository<ShoppingCartDto, ShoppingCartResult> {
 }

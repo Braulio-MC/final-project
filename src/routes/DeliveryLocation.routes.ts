@@ -28,6 +28,11 @@ router.get(
   deliveryLocationController.paging.bind(deliveryLocationController)
 )
 router.post(
+  '/delivery-locations/exists/criteria',
+  criteriaValidation,
+  deliveryLocationController.existsByCriteria.bind(deliveryLocationController)
+)
+router.post(
   '/delivery-locations/criteria',
   criteriaValidation,
   deliveryLocationController.pagingByCriteria.bind(deliveryLocationController)

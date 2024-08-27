@@ -1,8 +1,11 @@
 export default interface ShoppingCartProduct {
-  objectId: string
-  id: string
+  objectId: string // Doc id
+  id: string // Product id
   name: string
-  image: URL
+  image: string
   price: number
   quantity: number
+  createdAt: Date
+  updatedAt: Date
+  paginationKey: string
 }

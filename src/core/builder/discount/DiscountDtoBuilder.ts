@@ -1,6 +1,7 @@
 import { UUID } from 'crypto'
 import DiscountDto from '../../../data/dto/DiscountDto'
 import IDiscountDtoBuilder from './IDiscountDtoBuilder'
+import { Timestamp } from 'firebase-admin/firestore'
 
 export default class DiscountDtoBuilder implements IDiscountDtoBuilder {
   private discountDto!: DiscountDto
@@ -28,12 +29,12 @@ export default class DiscountDtoBuilder implements IDiscountDtoBuilder {
     return this
   }
 
-  setStartDate (startDate: FirebaseFirestore.Timestamp): IDiscountDtoBuilder {
+  setStartDate (startDate: Timestamp): IDiscountDtoBuilder {
     this.discountDto.startDate = startDate
     return this
   }
 
-  setEndDate (endDate: FirebaseFirestore.Timestamp): IDiscountDtoBuilder {
+  setEndDate (endDate: Timestamp): IDiscountDtoBuilder {
     this.discountDto.endDate = endDate
     return this
   }
@@ -43,12 +44,12 @@ export default class DiscountDtoBuilder implements IDiscountDtoBuilder {
     return this
   }
 
-  setCreatedAt (at: FirebaseFirestore.Timestamp): IDiscountDtoBuilder {
+  setCreatedAt (at: Timestamp): IDiscountDtoBuilder {
     this.discountDto.createdAt = at
     return this
   }
 
-  setUpdatedAt (at: FirebaseFirestore.Timestamp): IDiscountDtoBuilder {
+  setUpdatedAt (at: Timestamp): IDiscountDtoBuilder {
     this.discountDto.updatedAt = at
     return this
   }

@@ -5,6 +5,6 @@ export default interface IProductFavoriteDtoBuilder extends IBaseBuilder<IProduc
   setUserId: (id: string) => IProductFavoriteDtoBuilder
   setProductId: (id: string) => IProductFavoriteDtoBuilder
   setProductName: (name: string) => IProductFavoriteDtoBuilder
-  setProductImage: (image: URL) => IProductFavoriteDtoBuilder
+  setProductImage: (image: string) => IProductFavoriteDtoBuilder
   setProductDescription: (description: string) => IProductFavoriteDtoBuilder
 }

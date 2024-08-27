@@ -6,11 +6,11 @@ import FirestoreCriteriaConverter from '../../persistance/firestore/FirestoreCri
 import Criteria from '../../../core/criteria/Criteria'
 import { OrderResult, PagingResult } from '../../../types'
 import { firestoreConfig } from '../../../core/Configuration'
-import OrderLineDto from '../../dto/OrderLineDto'
 import OrderStatuses from '../../../core/OrderStatuses'
 import ErrorResponse from '../../../core/ErrorResponse'
 import { ORDER_DELETE_ERROR_MESSAGE } from '../../../core/Constants'
 import { StatusCodes } from 'http-status-codes'
+import UpdateOrderDto from '../../dto/UpdateOrderDto'
 
 @singleton()
 export default class FirestoreOrderRepository implements IOrderRepository {
@@ -26,15 +26,25 @@ export default class FirestoreOrderRepository implements IOrderRepository {
     this._collectionRef = this.firestoreDB.collection(this._collectionName) as CollectionReference<OrderDto>
   }
 
-  async create (order: OrderDto, orderLines: OrderLineDto[]): Promise<void> {
-    const documentRef = await this._collectionRef.add(order)
-    for (const orderLine of orderLines) {
-      await documentRef.collection(this._subCollectionName).add(orderLine)
-    }
+  async create (item: OrderDto): Promise<string> {
+    const documentRef = await this._collectionRef.add(item)
+    return documentRef.id
   }
 
   async update (id: string, item: Partial<OrderDto>): Promise<void> {
-    await this._collectionRef.doc(id).update(item)
+    const update: UpdateOrderDto = {
+      id: undefined,
+      status: item.status,
+      total: undefined,
+      createdAt: undefined,
+      updatedAt: item.updatedAt,
+      store: undefined,
+      user: undefined,
+      deliveryLocation: undefined,
+      paymentMethod: undefined,
+      paginationKey: undefined
+    }
+    await this._collectionRef.doc(id).update({ ...update })
   }
 
   async paging (limit: number, after: string, before: string): Promise<PagingResult<OrderResult>> {
@@ -60,7 +70,10 @@ export default class FirestoreOrderRepository implements IOrderRepository {
             name: orderLine.data()?.product.name,
             image: orderLine.data()?.product.image,
             price: orderLine.data()?.product.price
-          }
+          },
+          createdAt: orderLine.data()?.createdAt,
+          updatedAt: orderLine.data()?.updatedAt,
+          paginationKey: orderLine.data()?.paginationKey
         }))
         const order: OrderResult = {
           id: doc.id,
@@ -69,20 +82,20 @@ export default class FirestoreOrderRepository implements IOrderRepository {
           createdAt: doc.data()?.createdAt,
           updatedAt: doc.data()?.updatedAt,
           store: {
-            id: doc.data()?.store.id,
-            name: doc.data()?.store.name
+            id: doc.data()?.store?.id,
+            name: doc.data()?.store?.name
           },
           user: {
-            id: doc.data()?.user.id,
-            name: doc.data()?.user.name
+            id: doc.data()?.user?.id,
+            name: doc.data()?.user?.name
           },
           deliveryLocation: {
-            id: doc.data()?.deliveryLocation.id,
-            name: doc.data()?.deliveryLocation.name
+            id: doc.data()?.deliveryLocation?.id,
+            name: doc.data()?.deliveryLocation?.name
           },
           paymentMethod: {
-            id: doc.data()?.paymentMethod.id,
-            name: doc.data()?.paymentMethod.name
+            id: doc.data()?.paymentMethod?.id,
+            name: doc.data()?.paymentMethod?.name
           },
           orderLines,
           paginationKey: doc.data()?.paginationKey
@@ -113,7 +126,10 @@ export default class FirestoreOrderRepository implements IOrderRepository {
           name: orderLine.data()?.product.name,
           image: orderLine.data()?.product.image,
           price: orderLine.data()?.product.price
-        }
+        },
+        createdAt: orderLine.data()?.createdAt,
+        updatedAt: orderLine.data()?.updatedAt,
+        paginationKey: orderLine.data()?.paginationKey
       }))
       const one: OrderResult = {
         id: documentRef.id,
@@ -122,20 +138,20 @@ export default class FirestoreOrderRepository implements IOrderRepository {
         createdAt: documentRef.data()?.createdAt,
         updatedAt: documentRef.data()?.updatedAt,
         store: {
-          id: documentRef.data()?.store.id,
-          name: documentRef.data()?.store.name
+          id: documentRef.data()?.store?.id,
+          name: documentRef.data()?.store?.name
         },
         user: {
-          id: documentRef.data()?.user.id,
-          name: documentRef.data()?.user.name
+          id: documentRef.data()?.user?.id,
+          name: documentRef.data()?.user?.name
         },
         deliveryLocation: {
-          id: documentRef.data()?.deliveryLocation.id,
-          name: documentRef.data()?.deliveryLocation.name
+          id: documentRef.data()?.deliveryLocation?.id,
+          name: documentRef.data()?.deliveryLocation?.name
         },
         paymentMethod: {
-          id: documentRef.data()?.paymentMethod.id,
-          name: documentRef.data()?.paymentMethod.name
+          id: documentRef.data()?.paymentMethod?.id,
+          name: documentRef.data()?.paymentMethod?.name
         },
         orderLines,
         paginationKey: documentRef.data()?.paginationKey
@@ -159,6 +175,20 @@ export default class FirestoreOrderRepository implements IOrderRepository {
         )
       }
     }
+  }
+
+  async existsByCriteria (criteria: Criteria): Promise<boolean> {
+    const convertResult = this.converter.convert(criteria)
+    let ref = this._collectionRef.orderBy(this._paginationKey)
+    convertResult.filters.forEach(filter => {
+      ref = ref.where(filter.field, filter.operator, filter.value)
+    })
+    const limit = convertResult.limit
+    if (convertResult.sort.field !== '') {
+      ref = ref.orderBy(convertResult.sort.field, convertResult.sort.direction)
+    }
+    const querySnapshot = await ref.select('createdAt').limit(limit).get()
+    return !querySnapshot.empty
   }
 
   async pagingByCriteria (criteria: Criteria): Promise<PagingResult<OrderResult>> {
@@ -193,7 +223,10 @@ export default class FirestoreOrderRepository implements IOrderRepository {
           name: orderLine.data()?.product.name,
           image: orderLine.data()?.product.image,
           price: orderLine.data()?.product.price
-        }
+        },
+        createdAt: orderLine.data()?.createdAt,
+        updatedAt: orderLine.data()?.updatedAt,
+        paginationKey: orderLine.data()?.paginationKey
       }))
       const order: OrderResult = {
         id: doc.id,
@@ -202,20 +235,20 @@ export default class FirestoreOrderRepository implements IOrderRepository {
         createdAt: doc.data()?.createdAt,
         updatedAt: doc.data()?.updatedAt,
         store: {
-          id: doc.data()?.store.id,
-          name: doc.data()?.store.name
+          id: doc.data()?.store?.id,
+          name: doc.data()?.store?.name
         },
         user: {
-          id: doc.data()?.user.id,
-          name: doc.data()?.user.name
+          id: doc.data()?.user?.id,
+          name: doc.data()?.user?.name
         },
         deliveryLocation: {
-          id: doc.data()?.deliveryLocation.id,
-          name: doc.data()?.deliveryLocation.name
+          id: doc.data()?.deliveryLocation?.id,
+          name: doc.data()?.deliveryLocation?.name
         },
         paymentMethod: {
-          id: doc.data()?.paymentMethod.id,
-          name: doc.data()?.paymentMethod.name
+          id: doc.data()?.paymentMethod?.id,
+          name: doc.data()?.paymentMethod?.name
         },
         orderLines,
         paginationKey: doc.data()?.paginationKey

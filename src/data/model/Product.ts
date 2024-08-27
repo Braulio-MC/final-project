@@ -6,7 +6,7 @@ export default interface Product {
   id: string
   name: string
   description: string
-  image: URL
+  image: string
   price: number
   quantity: number
   rating: number

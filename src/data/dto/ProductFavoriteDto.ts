@@ -5,7 +5,7 @@ export default interface ProductFavoriteDto {
   userId: string | undefined
   productId: string | undefined
   productName: string | undefined
-  productImage: URL | undefined
+  productImage: string | undefined
   productDescription: string | undefined
   createdAt: Timestamp | undefined
   updatedAt: Timestamp | undefined

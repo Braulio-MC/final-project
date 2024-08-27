@@ -50,7 +50,7 @@ export default class ProductDtoBuilder implements IProductDtoBuilder {
     return this
   }
 
-  setImage (image: URL): IProductDtoBuilder {
+  setImage (image: string): IProductDtoBuilder {
     this.productDto.image = image
     return this
   }

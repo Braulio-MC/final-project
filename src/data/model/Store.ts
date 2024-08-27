@@ -4,7 +4,7 @@ export default interface Store {
   description: string
   email: string
   phoneNumber: string
-  image: URL
+  image: string
   rating: number
   userId: string
   createdAt: Date

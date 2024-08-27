@@ -19,7 +19,7 @@ router.put(
   productFavoriteController.update.bind(productFavoriteController)
 )
 router.delete(
-  '/product-favorites',
+  '/product-favorites/:id',
   productFavoriteController.delete.bind(productFavoriteController)
 )
 router.get(
@@ -31,7 +31,11 @@ router.get(
   pagingValidation,
   productFavoriteController.paging.bind(productFavoriteController)
 )
-
+router.post(
+  '/product-favorites/exists/criteria',
+  criteriaValidation,
+  productFavoriteController.existsByCriteria.bind(productFavoriteController)
+)
 router.post(
   '/product-favorites/criteria',
   criteriaValidation,

@@ -18,4 +18,9 @@ export default class Filter {
     }
     throw new Error('The filter is invalid')
   }
+
+  toRedisKey (): string {
+    const field = this.field instanceof FieldPath ? this.field.toRedisKey() : this.field
+    return `${field}_${this.operator.toRedisKey()}_${JSON.stringify(this.value)}`
+  }
 }

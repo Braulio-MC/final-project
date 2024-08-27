@@ -29,6 +29,11 @@ router.get(
   paymentController.paging.bind(paymentController)
 )
 router.post(
+  '/payment/exists/criteria',
+  criteriaValidation,
+  paymentController.existsByCriteria.bind(paymentController)
+)
+router.post(
   '/payment/criteria',
   criteriaValidation,
   paymentController.pagingByCriteria.bind(paymentController)

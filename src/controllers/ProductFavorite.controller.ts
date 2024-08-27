@@ -5,7 +5,7 @@ import { validationResult } from 'express-validator'
 import moment from 'moment'
 import { Timestamp } from 'firebase-admin/firestore'
 import ProductFavoriteService from '../data/service/ProductFavorite.service'
-import ProductFavoriteDtoBuilder from '../core/builder/productFavorite/ProductFavoriteDtoBuilder'
+import ProductFavoriteDtoBuilder from '../core/builder/productfavorite/ProductFavoriteDtoBuilder'
 import Filters from '../core/criteria/Filters'
 import Filter from '../core/criteria/Filter'
 import FieldPath from '../core/criteria/FieldPath'
@@ -41,8 +41,8 @@ export default class ProductFavoriteController implements IController {
         .setPaginationKey(randomUUID())
         .build()
       this.service.create(newProductFavorite)
-        .then(_ => {
-          res.sendStatus(StatusCodes.CREATED)
+        .then(id => {
+          res.status(StatusCodes.CREATED).json(id)
         })
         .catch(e => {
           const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
@@ -99,7 +99,7 @@ export default class ProductFavoriteController implements IController {
   async findById (req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params
-      const productFavorite = this.service.findById(id)
+      const productFavorite = await this.service.findById(id)
       if (productFavorite !== null) {
         res.status(StatusCodes.OK).json(productFavorite)
       } else {
@@ -135,6 +135,30 @@ export default class ProductFavoriteController implements IController {
     }
   }
 
+  async existsByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
+    const errors = validationResult(req).formatWith(expressErrorFormatter)
+    if (errors.isEmpty()) {
+      try {
+        const { filters, order } = req.body
+        const filterList = new Filters()
+        filters.forEach(({ field, operator, value }: { field: string[], operator: string, value: any }) => {
+          filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
+        })
+        const sort = Order.fromValues(order.orderBy, order.orderType)
+        const criteria = new Criteria(filterList, 1, sort)
+        const productFavorite = await this.service.existsByCriteria(criteria)
+        res.status(StatusCodes.OK).json(productFavorite)
+      } catch (e: any) {
+        const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
+        next(error)
+      }
+    } else {
+      const errorsFormat = errors.array().join(', ')
+      const error = new ErrorResponse(errorsFormat, StatusCodes.BAD_REQUEST)
+      next(error)
+    }
+  }
+
   async pagingByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
@@ -151,7 +175,7 @@ export default class ProductFavoriteController implements IController {
           filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
         })
         const sort = Order.fromValues(order.orderBy, order.orderType)
-        const criteria = new Criteria(filterList, sort, limit, after, before)
+        const criteria = new Criteria(filterList, limit, sort, after, before)
         const productFavorites = await this.service.pagingByCriteria(criteria)
         res.status(StatusCodes.OK).json(productFavorites)
       } catch (e: any) {

@@ -28,6 +28,11 @@ router.get(
   discountController.paging.bind(discountController)
 )
 router.post(
+  '/discounts/exists/criteria',
+  criteriaValidation,
+  discountController.existsByCriteria.bind(discountController)
+)
+router.post(
   '/discounts/criteria',
   criteriaValidation,
   discountController.pagingByCriteria.bind(discountController)

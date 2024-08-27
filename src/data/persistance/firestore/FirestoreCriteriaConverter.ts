@@ -1,32 +1,11 @@
-import { FieldPath, WhereFilterOp } from 'firebase-admin/firestore'
+import { FieldPath } from 'firebase-admin/firestore'
 import Criteria from '../../../core/criteria/Criteria'
 import Filter from '../../../core/criteria/Filter'
 import FilterOperators from '../../../core/criteria/FilterOperators'
 import Filters from '../../../core/criteria/Filters'
 import Order from '../../../core/criteria/Order'
 import { DEFAULT_PAGING_AFTER, DEFAULT_PAGING_BEFORE, DEFAULT_PAGING_LIMIT } from '../../../core/Constants'
-
-type FirestoreSortDirection = 'asc' | 'desc'
-type TransformerFunction<T, R> = (value: T) => R
-
-interface FirestoreFilter {
-  field: string | FieldPath
-  operator: WhereFilterOp
-  value: any
-}
-
-interface FirestoreSort {
-  field: string
-  direction: FirestoreSortDirection
-}
-
-interface FirestoreQuery {
-  filters: FirestoreFilter[]
-  sort: FirestoreSort
-  limit: number
-  after: string
-  before: string
-}
+import { FirestoreFilter, FirestoreQuery, FirestoreSort, TransformerFunction } from '../../../types'
 
 export default class FirestoreCriteriaConverter {
   private readonly filterTransformers: Map<FilterOperators, TransformerFunction<Filter, FirestoreFilter>>
@@ -47,13 +26,14 @@ export default class FirestoreCriteriaConverter {
   }
 
   public convert (criteria: Criteria): FirestoreQuery {
-    return {
+    const query = {
       filters: this.makeFirestoreFilters(criteria.filters),
       sort: FirestoreCriteriaConverter.makeFirestoreSort(criteria.order),
       limit: criteria.limit ?? DEFAULT_PAGING_LIMIT,
       after: criteria.after ?? DEFAULT_PAGING_AFTER,
       before: criteria.before ?? DEFAULT_PAGING_BEFORE
     }
+    return query
   }
 
   private makeFirestoreFilters (filters: Filters): FirestoreFilter[] {
@@ -86,11 +66,25 @@ export default class FirestoreCriteriaConverter {
     return new FieldPath(...filter.field._value)
   }
 
+  //* map possible values to firestore values
+  private static makeFirestoreValue (filter: Filter): any {
+    if (filter.field instanceof Object) {
+      if (filter.field._value[0] === 'createdAt') {
+        return new Date(filter.value)
+      } else if (filter.field._value[0] === 'updatedAt') {
+        return new Date(filter.value)
+      } else {
+        return filter.value
+      }
+    }
+    return filter.value // value is string
+  }
+
   private lowerThanFilter (filter: Filter): FirestoreFilter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: '<',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -99,7 +93,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: '<=',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -108,7 +102,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: '==',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -117,7 +111,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: '>',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -126,7 +120,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: '>=',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -135,7 +129,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: '!=',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -144,7 +138,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: 'array-contains',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -153,7 +147,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: 'array-contains-any',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -162,7 +156,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: 'in',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }
@@ -171,7 +165,7 @@ export default class FirestoreCriteriaConverter {
     const firestoreFilter: FirestoreFilter = {
       field: FirestoreCriteriaConverter.makeFirestoreField(filter),
       operator: 'not-in',
-      value: filter.value
+      value: FirestoreCriteriaConverter.makeFirestoreValue(filter)
     }
     return firestoreFilter
   }

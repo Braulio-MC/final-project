@@ -6,6 +6,6 @@ export default interface IStoreDtoBuilder extends IBaseBuilder<IStoreDtoBuilder,
   setDescription: (description: string) => IStoreDtoBuilder
   setEmail: (email: string) => IStoreDtoBuilder
   setPhoneNumber: (phoneNumber: string) => IStoreDtoBuilder
-  setImage: (image: URL) => IStoreDtoBuilder
+  setImage: (image: string) => IStoreDtoBuilder
   setUserId: (id: string) => IStoreDtoBuilder
 }

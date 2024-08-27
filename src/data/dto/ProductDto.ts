@@ -7,7 +7,7 @@ export default interface ProductDto {
   id: string | undefined
   name: string | undefined
   description: string | undefined
-  image: URL | undefined
+  image: string | undefined
   price: number | undefined
   quantity: number | undefined
   createdAt: Timestamp | undefined

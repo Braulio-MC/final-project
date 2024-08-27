@@ -22,4 +22,8 @@ export default class Filters {
   public static empty (): Filters {
     return new Filters([])
   }
+
+  toRedisKey (): string {
+    return this.filters.map(filter => filter.toRedisKey()).join('_')
+  }
 }

@@ -133,9 +133,13 @@ dist
 # IDE
 .idea/
 .vs/
+.vscode/
 
 # extras
 resources/
 firebase.json
+storage.rules
+service_account_key.json
 .firebaserc
 firebase/
+tmp/

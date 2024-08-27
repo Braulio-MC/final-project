@@ -46,7 +46,7 @@ export default class StoreDtoBuilder implements IStoreDtoBuilder {
     return this
   }
 
-  setImage (image: URL): IStoreDtoBuilder {
+  setImage (image: string): IStoreDtoBuilder {
     this.storeDto.image = image
     return this
   }

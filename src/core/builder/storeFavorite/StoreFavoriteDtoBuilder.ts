@@ -42,7 +42,7 @@ export default class StoreFavoriteDtoBuilder implements IStoreFavoriteDtoBuilder
     return this
   }
 
-  setImage (image: URL): IStoreFavoriteDtoBuilder {
+  setImage (image: string): IStoreFavoriteDtoBuilder {
     this.storeFavoriteDto.image = image
     return this
   }

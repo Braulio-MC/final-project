@@ -25,8 +25,9 @@ export default class FirestoreDeliveryLocationRepository implements IDeliveryLoc
     this._collectionRef = this.firestoreDB.collection(this._collectionName) as CollectionReference<DeliveryLocationDto>
   }
 
-  async create (item: DeliveryLocationDto): Promise<void> {
-    await this._collectionRef.add(item)
+  async create (item: DeliveryLocationDto): Promise<string> {
+    const documentRef = await this._collectionRef.add(item)
+    return documentRef.id
   }
 
   async update (id: string, item: Partial<DeliveryLocationDto>): Promise<void> {
@@ -110,6 +111,20 @@ export default class FirestoreDeliveryLocationRepository implements IDeliveryLoc
         StatusCodes.UNPROCESSABLE_ENTITY
       )
     }
+  }
+
+  async existsByCriteria (criteria: Criteria): Promise<boolean> {
+    const convertResult = this.converter.convert(criteria)
+    let ref = this._collectionRef.orderBy(this._paginationKey)
+    convertResult.filters.forEach(filter => {
+      ref = ref.where(filter.field, filter.operator, filter.value)
+    })
+    const limit = convertResult.limit
+    if (convertResult.sort.field !== '') {
+      ref = ref.orderBy(convertResult.sort.field, convertResult.sort.direction)
+    }
+    const querySnapshot = await ref.select('createdAt').limit(limit).get()
+    return !querySnapshot.empty
   }
 
   async pagingByCriteria (criteria: Criteria): Promise<PagingResult<DeliveryLocationDto>> {

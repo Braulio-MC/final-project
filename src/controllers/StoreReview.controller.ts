@@ -11,7 +11,7 @@ import FilterOperator from '../core/criteria/FilterOperator'
 import Order from '../core/criteria/Order'
 import Criteria from '../core/criteria/Criteria'
 import StoreReviewService from '../data/service/StoreReview.service'
-import StoreReviewDtoBuilder from '../core/builder/storeReview/StoreReviewDtoBuilder'
+import StoreReviewDtoBuilder from '../core/builder/storereview/StoreReviewDtoBuilder'
 import ErrorResponse from '../core/ErrorResponse'
 import { expressErrorFormatter } from '../core/Utils'
 import { DEFAULT_PAGING_AFTER, DEFAULT_PAGING_BEFORE, DEFAULT_PAGING_LIMIT } from '../core/Constants'
@@ -39,8 +39,8 @@ export default class StoreReviewController implements IController {
         .setPaginationKey(randomUUID())
         .build()
       this.service.create(newStoreReview)
-        .then(_ => {
-          res.sendStatus(StatusCodes.CREATED)
+        .then(id => {
+          res.status(StatusCodes.CREATED).json(id)
         })
         .catch(e => {
           const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
@@ -93,7 +93,7 @@ export default class StoreReviewController implements IController {
   async findById (req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params
-      const storeReview = this.service.findById(id)
+      const storeReview = await this.service.findById(id)
       if (storeReview !== null) {
         res.status(StatusCodes.OK).json(storeReview)
       } else {
@@ -129,6 +129,30 @@ export default class StoreReviewController implements IController {
     }
   }
 
+  async existsByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
+    const errors = validationResult(req).formatWith(expressErrorFormatter)
+    if (errors.isEmpty()) {
+      try {
+        const { filters, order } = req.body
+        const filterList = new Filters()
+        filters.forEach(({ field, operator, value }: { field: string[], operator: string, value: any }) => {
+          filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
+        })
+        const sort = Order.fromValues(order.orderBy, order.orderType)
+        const criteria = new Criteria(filterList, 1, sort)
+        const storeReview = await this.service.existsByCriteria(criteria)
+        res.status(StatusCodes.OK).json(storeReview)
+      } catch (e: any) {
+        const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
+        next(error)
+      }
+    } else {
+      const errorsFormat = errors.array().join(', ')
+      const error = new ErrorResponse(errorsFormat, StatusCodes.BAD_REQUEST)
+      next(error)
+    }
+  }
+
   async pagingByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
@@ -145,7 +169,7 @@ export default class StoreReviewController implements IController {
           filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
         })
         const sort = Order.fromValues(order.orderBy, order.orderType)
-        const criteria = new Criteria(filterList, sort, limit, after, before)
+        const criteria = new Criteria(filterList, limit, sort, after, before)
         const storeReviews = await this.service.pagingByCriteria(criteria)
         res.status(StatusCodes.OK).json(storeReviews)
       } catch (e: any) {

@@ -5,4 +5,7 @@ export default interface OrderLine {
   total: number
   quantity: number
   product: OrderLineProduct
+  createdAt: Date
+  updatedAt: Date
+  paginationKey: string
 }

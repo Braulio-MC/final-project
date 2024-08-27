@@ -4,8 +4,7 @@ import IStoreRepository from './IStoreRepository'
 import StoreDto from '../../dto/StoreDto'
 import FirestoreCriteriaConverter from '../../persistance/firestore/FirestoreCriteriaConverter'
 import Criteria from '../../../core/criteria/Criteria'
-import { PagingResult, StoreSearchResult } from '../../../types'
-import { SearchIndex } from 'algoliasearch'
+import { PagingResult } from '../../../types'
 import { firestoreConfig } from '../../../core/Configuration'
 import OrderStatuses from '../../../core/OrderStatuses'
 import ErrorResponse from '../../../core/ErrorResponse'
@@ -29,14 +28,14 @@ export default class FirestoreStoreRepository implements IStoreRepository {
 
   constructor (
     @inject('FirestoreDB') private readonly firestoreDB: Firestore,
-    @inject(FirestoreCriteriaConverter) private readonly converter: FirestoreCriteriaConverter,
-    @inject('StoreAlgoliaIndex') private readonly algoliaIndex: SearchIndex
+    @inject(FirestoreCriteriaConverter) private readonly converter: FirestoreCriteriaConverter
   ) {
     this._collectionRef = this.firestoreDB.collection(this._collectionName) as CollectionReference<StoreDto>
   }
 
-  async create (item: StoreDto): Promise<void> {
-    await this._collectionRef.add(item)
+  async create (item: StoreDto): Promise<string> {
+    const documentRef = await this._collectionRef.add(item)
+    return documentRef.id
   }
 
   async update (id: string, item: Partial<StoreDto>): Promise<void> {
@@ -98,22 +97,6 @@ export default class FirestoreStoreRepository implements IStoreRepository {
         StatusCodes.UNPROCESSABLE_ENTITY
       )
     }
-  }
-
-  async search (query: string, perPage: number): Promise<StoreSearchResult[]> {
-    const result = await this.algoliaIndex.search(query, {
-      hitsPerPage: perPage
-    })
-    const hits = result.hits.map(hit => {
-      const store: StoreSearchResult = {
-        id: hit.objectID,
-        name: 'name' in hit ? hit.name as string : '',
-        phoneNumber: 'phoneNumber' in hit ? hit.phoneNumber as string : '',
-        email: 'email' in hit ? hit.email as string : ''
-      }
-      return store
-    })
-    return hits
   }
 
   async paging (limit: number, after: string, before: string): Promise<PagingResult<StoreDto>> {
@@ -260,6 +243,20 @@ export default class FirestoreStoreRepository implements IStoreRepository {
         StatusCodes.UNPROCESSABLE_ENTITY
       )
     }
+  }
+
+  async existsByCriteria (criteria: Criteria): Promise<boolean> {
+    const convertResult = this.converter.convert(criteria)
+    let ref = this._collectionRef.orderBy(this._paginationKey)
+    convertResult.filters.forEach(filter => {
+      ref = ref.where(filter.field, filter.operator, filter.value)
+    })
+    const limit = convertResult.limit
+    if (convertResult.sort.field !== '') {
+      ref = ref.orderBy(convertResult.sort.field, convertResult.sort.direction)
+    }
+    const querySnapshot = await ref.select('createdAt').limit(limit).get()
+    return !querySnapshot.empty
   }
 
   async pagingByCriteria (criteria: Criteria): Promise<PagingResult<StoreDto>> {

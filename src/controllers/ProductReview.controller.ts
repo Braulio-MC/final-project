@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { validationResult } from 'express-validator'
 import moment from 'moment'
-import ProductReviewDtoBuilder from '../core/builder/productReview/ProductReviewDtoBuilder'
+import ProductReviewDtoBuilder from '../core/builder/productreview/ProductReviewDtoBuilder'
 import { Timestamp } from 'firebase-admin/firestore'
 import Filters from '../core/criteria/Filters'
 import FieldPath from '../core/criteria/FieldPath'
@@ -39,8 +39,8 @@ export default class ProductReviewController implements IController {
         .setPaginationKey(randomUUID())
         .build()
       this.service.create(newProductReview)
-        .then(_ => {
-          res.sendStatus(StatusCodes.CREATED)
+        .then(id => {
+          res.status(StatusCodes.CREATED).json(id)
         })
         .catch(e => {
           const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
@@ -93,7 +93,7 @@ export default class ProductReviewController implements IController {
   async findById (req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params
-      const productReview = this.service.findById(id)
+      const productReview = await this.service.findById(id)
       if (productReview !== null) {
         res.status(StatusCodes.OK).json(productReview)
       } else {
@@ -129,6 +129,30 @@ export default class ProductReviewController implements IController {
     }
   }
 
+  async existsByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
+    const errors = validationResult(req).formatWith(expressErrorFormatter)
+    if (errors.isEmpty()) {
+      try {
+        const { filters, order } = req.body
+        const filterList = new Filters()
+        filters.forEach(({ field, operator, value }: { field: string[], operator: string, value: any }) => {
+          filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
+        })
+        const sort = Order.fromValues(order.orderBy, order.orderType)
+        const criteria = new Criteria(filterList, 1, sort)
+        const productReview = await this.service.existsByCriteria(criteria)
+        res.status(StatusCodes.OK).json(productReview)
+      } catch (e: any) {
+        const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
+        next(error)
+      }
+    } else {
+      const errorsFormat = errors.array().join(', ')
+      const error = new ErrorResponse(errorsFormat, StatusCodes.BAD_REQUEST)
+      next(error)
+    }
+  }
+
   async pagingByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
@@ -145,7 +169,7 @@ export default class ProductReviewController implements IController {
           filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
         })
         const sort = Order.fromValues(order.orderBy, order.orderType)
-        const criteria = new Criteria(filterList, sort, limit, after, before)
+        const criteria = new Criteria(filterList, limit, sort, after, before)
         const productReviews = await this.service.pagingByCriteria(criteria)
         res.status(StatusCodes.OK).json(productReviews)
       } catch (e: any) {

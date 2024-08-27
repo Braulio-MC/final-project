@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { Timestamp } from 'firebase-admin/firestore'
 import { inject, singleton } from 'tsyringe'
 import ShoppingCartService from '../data/service/ShoppingCart.service'
-import ShoppingCartDtoBuilder from '../core/builder/shoppingCart/ShoppingCartDtoBuilder'
+import ShoppingCartDtoBuilder from '../core/builder/shoppingcart/ShoppingCartDtoBuilder'
 import { NextFunction, Request, Response } from 'express'
 import moment from 'moment'
 import Filters from '../core/criteria/Filters'
@@ -17,20 +17,18 @@ import ErrorResponse from '../core/ErrorResponse'
 import { DEFAULT_PAGING_AFTER, DEFAULT_PAGING_BEFORE, DEFAULT_PAGING_LIMIT } from '../core/Constants'
 import { randomUUID } from 'crypto'
 import IController from './IController'
-import ShoppingCartProductDtoBuilder from '../core/builder/shoppingCart/ShoppingCartProductDtoBuilder'
 
 @singleton()
 export default class ShoppingCartController implements IController {
   constructor (
     @inject(ShoppingCartService) private readonly service: ShoppingCartService,
-    @inject(ShoppingCartDtoBuilder) private readonly shoppingCartBuilder: ShoppingCartDtoBuilder,
-    @inject(ShoppingCartProductDtoBuilder) private readonly shoppingCartProductBuilder: ShoppingCartProductDtoBuilder
+    @inject(ShoppingCartDtoBuilder) private readonly shoppingCartBuilder: ShoppingCartDtoBuilder
   ) {}
 
   async create (req: Request, res: Response, next: NextFunction): Promise<void> {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
-      const { userId, storeId, storeName, products } = req.body
+      const { userId, storeId, storeName } = req.body
       const at = Timestamp.fromDate(moment().toDate())
       const newCart = this.shoppingCartBuilder
         .setUserId(userId)
@@ -40,12 +38,9 @@ export default class ShoppingCartController implements IController {
         .setUpdatedAt(at)
         .setPaginationKey(randomUUID())
         .build()
-      const newCartProducts = this.shoppingCartProductBuilder
-        .setProducts(products)
-        .build()
-      this.service.create(newCart, newCartProducts)
-        .then(_ => {
-          res.sendStatus(StatusCodes.CREATED)
+      this.service.create(newCart)
+        .then(id => {
+          res.status(StatusCodes.CREATED).json(id)
         })
         .catch(e => {
           const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
@@ -62,17 +57,14 @@ export default class ShoppingCartController implements IController {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
       const { id } = req.params
-      const { storeId, storeName, products } = req.body
+      const { storeId, storeName } = req.body
       const at = Timestamp.fromDate(moment().toDate())
       const updateCart = this.shoppingCartBuilder
         .setStoreId(storeId)
         .setStoreName(storeName)
         .setUpdatedAt(at)
         .build()
-      const updateCartProducts = this.shoppingCartProductBuilder
-        .setProducts(products)
-        .build()
-      this.service.update(id, updateCart, updateCartProducts)
+      this.service.update(id, updateCart)
         .then(_ => {
           res.sendStatus(StatusCodes.OK)
         })
@@ -138,6 +130,30 @@ export default class ShoppingCartController implements IController {
     }
   }
 
+  async existsByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
+    const errors = validationResult(req).formatWith(expressErrorFormatter)
+    if (errors.isEmpty()) {
+      try {
+        const { filters, order } = req.body
+        const filterList = new Filters()
+        filters.forEach(({ field, operator, value }: { field: string[], operator: string, value: any }) => {
+          filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
+        })
+        const sort = Order.fromValues(order.orderBy, order.orderType)
+        const criteria = new Criteria(filterList, 1, sort)
+        const shoppingCart = await this.service.existsByCriteria(criteria)
+        res.status(StatusCodes.OK).json(shoppingCart)
+      } catch (e: any) {
+        const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
+        next(error)
+      }
+    } else {
+      const errorsFormat = errors.array().join(', ')
+      const error = new ErrorResponse(errorsFormat, StatusCodes.BAD_REQUEST)
+      next(error)
+    }
+  }
+
   async pagingByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
@@ -154,7 +170,7 @@ export default class ShoppingCartController implements IController {
           filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
         })
         const sort = Order.fromValues(order.orderBy, order.orderType)
-        const criteria = new Criteria(filterList, sort, limit, after, before)
+        const criteria = new Criteria(filterList, limit, sort, after, before)
         const shoppingCarts = await this.service.pagingByCriteria(criteria)
         res.status(StatusCodes.OK).json(shoppingCarts)
       } catch (e: any) {

@@ -17,17 +17,17 @@ import { expressErrorFormatter } from '../core/Utils'
 import {
   DEFAULT_PAGING_AFTER,
   DEFAULT_PAGING_BEFORE,
-  DEFAULT_PAGING_LIMIT,
-  DEFAULT_SEARCH_PER_PAGE,
-  DEFAULT_SEARCH_QUERY
+  DEFAULT_PAGING_LIMIT
 } from '../core/Constants'
 import { randomUUID } from 'crypto'
 import IController from './IController'
+import StorageService from '../data/service/storage/Storage.service'
 
 @singleton()
 export default class ProductController implements IController {
   constructor (
     @inject(ProductService) private readonly service: ProductService,
+    @inject(StorageService) private readonly storageService: StorageService,
     @inject(ProductDtoBuilder) private readonly builder: ProductDtoBuilder
   ) {}
 
@@ -37,7 +37,6 @@ export default class ProductController implements IController {
       const {
         name,
         description,
-        image,
         price,
         quantity,
         storeId,
@@ -53,10 +52,25 @@ export default class ProductController implements IController {
       const at = Timestamp.fromDate(moment().toDate())
       const startDate = Timestamp.fromDate(new Date(discountStartDate))
       const endDate = Timestamp.fromDate(new Date(discountEndDate))
+      let imageUrl = ''
+      if (req.file == null) {
+        const error = new ErrorResponse('Image is required', StatusCodes.BAD_REQUEST)
+        next(error)
+      } else {
+        const localPath = `${storeName as string}/${req.file.filename}` // tmp/uploads/storeName/fileName
+        const storagePath = `${storeName as string}/${req.file.filename}` // images/storeName/fileName
+        this.storageService.saveImage(localPath, storagePath, req.file.mimetype)
+          .then(url => {
+            imageUrl = url
+          }).catch(e => {
+            const error = new ErrorResponse(e.message, StatusCodes.INTERNAL_SERVER_ERROR)
+            next(error)
+          })
+      }
       const newProduct = this.builder
         .setName(name)
         .setDescription(description)
-        .setImage(image)
+        .setImage(imageUrl)
         .setPrice(price)
         .setQuantity(quantity)
         .setStoreID(storeId)
@@ -73,8 +87,8 @@ export default class ProductController implements IController {
         .setPaginationKey(randomUUID())
         .build()
       this.service.create(newProduct)
-        .then(_ => {
-          res.sendStatus(StatusCodes.CREATED)
+        .then(id => {
+          res.status(StatusCodes.CREATED).json(id)
         })
         .catch(e => {
           const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
@@ -94,7 +108,6 @@ export default class ProductController implements IController {
       const {
         name,
         description,
-        image,
         price,
         quantity,
         storeId,
@@ -110,10 +123,9 @@ export default class ProductController implements IController {
       const at = Timestamp.fromDate(moment().toDate())
       const startDate = Timestamp.fromDate(new Date(discountStartDate))
       const endDate = Timestamp.fromDate(new Date(discountEndDate))
-      const updateProduct = this.builder
+      let updateProduct = this.builder
         .setName(name)
         .setDescription(description)
-        .setImage(image)
         .setPrice(price)
         .setQuantity(quantity)
         .setStoreID(storeId)
@@ -127,6 +139,32 @@ export default class ProductController implements IController {
         .setDiscountEndDate(endDate)
         .setUpdatedAt(at)
         .build()
+      if (req.file != null) {
+        const localPath = `${storeName as string}/${req.file.filename}` // tmp/uploads/storeName/fileName
+        this.storageService.updateImage(localPath, req.file.filename, req.file.mimetype, id)
+          .then(url => {
+            updateProduct = this.builder
+              .setName(name)
+              .setDescription(description)
+              .setImage(url)
+              .setPrice(price)
+              .setQuantity(quantity)
+              .setStoreID(storeId)
+              .setStoreName(storeName)
+              .setCategoryID(categoryId)
+              .setCategoryName(categoryName)
+              .setCategoryParentName(categoryParentName)
+              .setDiscountID(discountId)
+              .setDiscountPercentage(discountPercentage)
+              .setDiscountStartDate(startDate)
+              .setDiscountEndDate(endDate)
+              .setUpdatedAt(at)
+              .build()
+          }).catch(e => {
+            const error = new ErrorResponse(e.message, StatusCodes.INTERNAL_SERVER_ERROR)
+            next(error)
+          })
+      }
       this.service.update(id, updateProduct)
         .then(_ => {
           res.sendStatus(StatusCodes.OK)
@@ -193,6 +231,30 @@ export default class ProductController implements IController {
     }
   }
 
+  async existsByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
+    const errors = validationResult(req).formatWith(expressErrorFormatter)
+    if (errors.isEmpty()) {
+      try {
+        const { filters, order } = req.body
+        const filterList = new Filters()
+        filters.forEach(({ field, operator, value }: { field: string[], operator: string, value: any }) => {
+          filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
+        })
+        const sort = Order.fromValues(order.orderBy, order.orderType)
+        const criteria = new Criteria(filterList, 1, sort)
+        const product = await this.service.existsByCriteria(criteria)
+        res.status(StatusCodes.OK).json(product)
+      } catch (e: any) {
+        const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
+        next(error)
+      }
+    } else {
+      const errorsFormat = errors.array().join(', ')
+      const error = new ErrorResponse(errorsFormat, StatusCodes.BAD_REQUEST)
+      next(error)
+    }
+  }
+
   async pagingByCriteria (req: Request, res: Response, next: NextFunction): Promise<void> {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
@@ -209,31 +271,9 @@ export default class ProductController implements IController {
           filterList.add(new Filter(new FieldPath(...field), FilterOperator.fromValue(operator), value))
         })
         const sort = Order.fromValues(order.orderBy, order.orderType)
-        const criteria = new Criteria(filterList, sort, limit, after, before)
+        const criteria = new Criteria(filterList, limit, sort, after, before)
         const products = await this.service.pagingByCriteria(criteria)
         res.status(StatusCodes.OK).json(products)
-      } catch (e: any) {
-        const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
-        next(error)
-      }
-    } else {
-      const errorsFormat = errors.array().join(', ')
-      const error = new ErrorResponse(errorsFormat, StatusCodes.BAD_REQUEST)
-      next(error)
-    }
-  }
-
-  async search (req: Request, res: Response, next: NextFunction): Promise<void> {
-    const errors = validationResult(req).formatWith(expressErrorFormatter)
-    if (errors.isEmpty()) {
-      try {
-        const query = req.query.query as string ?? DEFAULT_SEARCH_QUERY
-        let perPage = DEFAULT_SEARCH_PER_PAGE
-        if (!isNaN(parseInt(req.query.perPage as string))) {
-          perPage = Math.abs(parseInt(req.query.perPage as string))
-        }
-        const result = await this.service.search(query, perPage)
-        res.status(StatusCodes.OK).json(result)
       } catch (e: any) {
         const error = new ErrorResponse(e.message, StatusCodes.UNPROCESSABLE_ENTITY)
         next(error)

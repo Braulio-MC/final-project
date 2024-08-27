@@ -32,6 +32,11 @@ router.get(
   storeFavoriteController.paging.bind(storeFavoriteController)
 )
 router.post(
+  '/store-favorites/exists/criteria',
+  criteriaValidation,
+  storeFavoriteController.existsByCriteria.bind(storeFavoriteController)
+)
+router.post(
   '/store-favorites/criteria',
   criteriaValidation,
   storeFavoriteController.pagingByCriteria.bind(storeFavoriteController)

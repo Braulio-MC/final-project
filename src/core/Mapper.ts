@@ -47,7 +47,33 @@ import Store from '../data/model/Store'
 import StoreDto from '../data/dto/StoreDto'
 import StoreReview from '../data/model/StoreReview'
 import StoreReviewDto from '../data/dto/StoreReviewDto'
-import { OrderResult, ShoppingCartResult } from '../types'
+import { OrderResult, OrderResultRedis, SearchResult, SearchResultContent, SearchResultContentRedis, SearchResultPagination, SearchResultPaginationRedis, ShoppingCartResult, ShoppingCartResultRedis } from '../types'
+import StoreFavorite from '../data/model/StoreFavorite'
+import StoreFavoriteDto from '../data/dto/StoreFavoriteDto'
+import CategoryParentRedis from '../data/persistance/redis/model/CategoryParentRedis'
+import CategoryRedis from '../data/persistance/redis/model/CategoryRedis'
+import DeliveryLocationRedis from '../data/persistance/redis/model/DeliveryLocationRedis'
+import DiscountRedis from '../data/persistance/redis/model/DiscountRedis'
+import OrderDeliveryLocationRedis from '../data/persistance/redis/model/OrderDeliveryLocationRedis'
+import OrderLineProductRedis from '../data/persistance/redis/model/OrderLineProductRedis'
+import OrderLineRedis from '../data/persistance/redis/model/OrderLineRedis'
+import OrderPaymentMethodRedis from '../data/persistance/redis/model/OrderPaymentMethodRedis'
+import OrderRedis from '../data/persistance/redis/model/OrderRedis'
+import OrderStoreRedis from '../data/persistance/redis/model/OrderStoreRedis'
+import OrderUserRedis from '../data/persistance/redis/model/OrderUserRedis'
+import PaymentRedis from '../data/persistance/redis/model/PaymentRedis'
+import ProductCategoryRedis from '../data/persistance/redis/model/ProductCategoryRedis'
+import ProductDiscountRedis from '../data/persistance/redis/model/ProductDiscountRedis'
+import ProductFavoriteRedis from '../data/persistance/redis/model/ProductFavoriteRedis'
+import ProductRedis from '../data/persistance/redis/model/ProductRedis'
+import ProductStoreRedis from '../data/persistance/redis/model/ProductStoreRedis'
+import ProductReviewRedis from '../data/persistance/redis/model/ProductReviewRedis'
+import ShoppingCartProductRedis from '../data/persistance/redis/model/ShoppingCartProductRedis'
+import ShoppingCartRedis from '../data/persistance/redis/model/ShoppingCartRedis'
+import ShoppingCartStoreRedis from '../data/persistance/redis/model/ShoppingCartStoreRedis'
+import StoreFavoriteRedis from '../data/persistance/redis/model/StoreFavoriteRedis'
+import StoreRedis from '../data/persistance/redis/model/StoreRedis'
+import StoreReviewRedis from '../data/persistance/redis/model/StoreReviewRedis'
 
 const mapper = createMapper({
   strategyInitializer: pojos()
@@ -149,7 +175,7 @@ export function createMappings (): void {
   PojosMetadataMap.create<OrderLineProduct>('OrderLineProduct', {
     id: String,
     name: String,
-    image: URL,
+    image: String,
     price: Number
   })
 
@@ -157,7 +183,10 @@ export function createMappings (): void {
     id: String,
     total: Number,
     quantity: Number,
-    product: 'OrderLineProduct'
+    product: 'OrderLineProduct',
+    createdAt: Date,
+    updatedAt: Date,
+    paginationKey: String
   })
 
   PojosMetadataMap.create<Order>('Order', {
@@ -197,7 +226,7 @@ export function createMappings (): void {
   PojosMetadataMap.create<OrderLineProductDto>('OrderLineProductDto', {
     id: String,
     name: String,
-    image: URL,
+    image: String,
     price: Number
   })
 
@@ -205,7 +234,10 @@ export function createMappings (): void {
     id: String,
     total: Number,
     quantity: Number,
-    product: 'OrderLineProductDto'
+    product: 'OrderLineProductDto',
+    createdAt: Timestamp,
+    updatedAt: Timestamp,
+    paginationKey: String
   })
 
   PojosMetadataMap.create<OrderDto>('OrderDto', {
@@ -275,7 +307,7 @@ export function createMappings (): void {
     id: String,
     name: String,
     description: String,
-    image: URL,
+    image: String,
     price: Number,
     quantity: Number,
     rating: Number,
@@ -309,7 +341,7 @@ export function createMappings (): void {
     id: String,
     name: String,
     description: String,
-    image: URL,
+    image: String,
     price: Number,
     quantity: Number,
     createdAt: Timestamp,
@@ -373,9 +405,12 @@ export function createMappings (): void {
     objectId: String,
     id: String,
     name: String,
-    image: URL,
+    image: String,
     price: Number,
-    quantity: Number
+    quantity: Number,
+    createdAt: Date,
+    updatedAt: Date,
+    paginationKey: String
   })
 
   PojosMetadataMap.create<ShoppingCart>('ShoppingCart', {
@@ -397,9 +432,12 @@ export function createMappings (): void {
     objectId: String,
     id: String,
     name: String,
-    image: URL,
+    image: String,
     price: Number,
-    quantity: Number
+    quantity: Number,
+    createdAt: Timestamp,
+    updatedAt: Timestamp,
+    paginationKey: String
   })
 
   PojosMetadataMap.create<ShoppingCartDto>('ShoppingCartDto', {
@@ -426,7 +464,7 @@ export function createMappings (): void {
     name: String,
     description: String,
     email: String,
-    image: URL,
+    image: String,
     phoneNumber: String,
     userId: String,
     createdAt: Date,
@@ -439,7 +477,7 @@ export function createMappings (): void {
     name: String,
     description: String,
     email: String,
-    image: URL,
+    image: String,
     phoneNumber: String,
     userId: String,
     createdAt: Timestamp,
@@ -466,6 +504,314 @@ export function createMappings (): void {
     updatedAt: Timestamp,
     paginationKey: String
   })
+
+  PojosMetadataMap.create<StoreFavorite>('StoreFavorite', {
+    id: String,
+    name: String,
+    description: String,
+    image: String,
+    phoneNumber: String,
+    email: String,
+    storeId: String,
+    userId: String,
+    paginationKey: String,
+    createdAt: Date,
+    updatedAt: Date
+  })
+
+  PojosMetadataMap.create<StoreFavoriteDto>('StoreFavoriteDto', {
+    id: String,
+    name: String,
+    description: String,
+    image: String,
+    phoneNumber: String,
+    email: String,
+    storeId: String,
+    userId: String,
+    paginationKey: String,
+    createdAt: Timestamp,
+    updatedAt: Timestamp
+  })
+
+  //* ********************* Redis metadata ************************
+
+  PojosMetadataMap.create<CategoryParentRedis>('CategoryParentRedis', {
+    id: String,
+    name: String
+  })
+
+  PojosMetadataMap.create<CategoryRedis>('CategoryRedis', {
+    id: String,
+    name: String,
+    parent: 'CategoryParentRedis',
+    storeId: String,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<DeliveryLocationRedis>('DeliveryLocationRedis', {
+    id: String,
+    name: String,
+    description: String,
+    storeId: String,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<DiscountRedis>('DiscountRedis', {
+    id: String,
+    percentage: Number,
+    startDate: Number,
+    endDate: Number,
+    storeId: String,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<OrderDeliveryLocationRedis>('OrderDeliveryLocationRedis', {
+    id: String,
+    name: String
+  })
+
+  PojosMetadataMap.create<OrderLineProductRedis>('OrderLineProductRedis', {
+    id: String,
+    name: String,
+    image: String,
+    price: Number
+  })
+
+  PojosMetadataMap.create<OrderLineRedis>('OrderLineRedis', {
+    id: String,
+    total: Number,
+    quantity: Number,
+    product: 'OrderLineProductRedis',
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<OrderPaymentMethodRedis>('OrderPaymentMethodRedis', {
+    id: String,
+    name: String
+  })
+
+  PojosMetadataMap.create<OrderStoreRedis>('OrderStoreRedis', {
+    id: String,
+    name: String
+  })
+
+  PojosMetadataMap.create<OrderUserRedis>('OrderUserRedis', {
+    id: String,
+    name: String
+  })
+
+  PojosMetadataMap.create<OrderRedis>('OrderRedis', {
+    id: String,
+    status: String,
+    total: Number,
+    createdAt: Number,
+    updatedAt: Number,
+    store: 'OrderStoreRedis',
+    user: 'OrderUserRedis',
+    deliveryLocation: 'OrderDeliveryLocationRedis',
+    paymentMethod: 'OrderPaymentMethodRedis',
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<OrderResultRedis>('OrderResultRedis', {
+    id: String,
+    status: String,
+    total: Number,
+    createdAt: Number,
+    updatedAt: Number,
+    store: 'OrderStoreRedis',
+    user: 'OrderUserRedis',
+    deliveryLocation: 'OrderDeliveryLocationRedis',
+    paymentMethod: 'OrderPaymentMethodRedis',
+    orderLines: ['OrderLineRedis'],
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<PaymentRedis>('PaymentRedis', {
+    id: String,
+    name: String,
+    description: String,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<ProductCategoryRedis>('ProductCategoryRedis', {
+    id: String,
+    name: String,
+    parentName: String
+  })
+
+  PojosMetadataMap.create<ProductDiscountRedis>('ProductDiscountRedis', {
+    id: String,
+    percentage: Number,
+    startDate: Number,
+    endDate: Number
+  })
+
+  PojosMetadataMap.create<ProductFavoriteRedis>('ProductFavoriteRedis', {
+    id: String,
+    userId: String,
+    productId: String,
+    productName: String,
+    productImage: String,
+    productDescription: String,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<ProductStoreRedis>('ProductStoreRedis', {
+    id: String,
+    name: String
+  })
+
+  PojosMetadataMap.create<ProductRedis>('ProductRedis', {
+    id: String,
+    name: String,
+    description: String,
+    image: String,
+    price: Number,
+    quantity: Number,
+    createdAt: Number,
+    updatedAt: Number,
+    store: 'ProductStoreRedis',
+    category: 'ProductCategoryRedis',
+    discount: 'ProductDiscountRedis',
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<ProductReviewRedis>('ProductReviewRedis', {
+    id: String,
+    userId: String,
+    productId: String,
+    rating: Number,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<ShoppingCartProductRedis>('ShoppingCartProductRedis', {
+    objectId: String,
+    id: String,
+    name: String,
+    image: String,
+    price: Number,
+    quantity: Number,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<ShoppingCartStoreRedis>('ShoppingCartStoreRedis', {
+    id: String,
+    name: String
+  })
+
+  PojosMetadataMap.create<ShoppingCartRedis>('ShoppingCartRedis', {
+    id: String,
+    userId: String,
+    createdAt: Number,
+    updatedAt: Number,
+    store: 'ShoppingCartStoreRedis',
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<ShoppingCartResultRedis>('ShoppingCartResultRedis', {
+    id: String,
+    userId: String,
+    createdAt: Number,
+    updatedAt: Number,
+    store: 'ShoppingCartStoreRedis',
+    products: ['ShoppingCartProductRedis'],
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<StoreFavoriteRedis>('StoreFavoriteRedis', {
+    id: String,
+    userId: String,
+    storeId: String,
+    name: String,
+    image: String,
+    description: String,
+    email: String,
+    phoneNumber: String,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<StoreRedis>('StoreRedis', {
+    id: String,
+    name: String,
+    description: String,
+    email: String,
+    phoneNumber: String,
+    image: String,
+    userId: String,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<StoreReviewRedis>('StoreReviewRedis', {
+    id: String,
+    userId: String,
+    storeId: String,
+    rating: Number,
+    createdAt: Number,
+    updatedAt: Number,
+    paginationKey: String
+  })
+
+  PojosMetadataMap.create<SearchResultContent>('SearchResultContent', {
+    id: String,
+    name: String,
+    image: String,
+    type: String,
+    description1: String,
+    description2: String
+  })
+
+  PojosMetadataMap.create<SearchResultPagination>('SearchResultPagination', {
+    currentPage: Number,
+    nbHits: Number,
+    nbPages: Number
+  })
+
+  PojosMetadataMap.create<SearchResult>('SearchResult', {
+    data: ['SearchResultContent'],
+    pagination: 'SearchResultPagination'
+  })
+
+  PojosMetadataMap.create<SearchResultContentRedis>('SearchResultContentRedis', {
+    id: String,
+    name: String,
+    image: String,
+    type: String,
+    description1: String,
+    description2: String
+  })
+
+  PojosMetadataMap.create<SearchResultPaginationRedis>('SearchResultPaginationRedis', {
+    currentPage: Number,
+    nbHits: Number,
+    nbPages: Number
+  })
+
+  PojosMetadataMap.create<SearchResult>('SearchResult', {
+    data: ['SearchResultContentRedis'],
+    pagination: 'SearchResultPaginationRedis'
+  })
+  //* ******************************************************
 
   //! ##################### Mappers ########################
 
@@ -534,6 +880,12 @@ export function createMappings (): void {
     'Discount',
     'DiscountDto',
     forMember(
+      (destination) => destination.startDate, mapFrom((source) => Timestamp.fromDate(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => Timestamp.fromDate(source.updatedAt))
+    ),
+    forMember(
       (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromDate(source.createdAt))
     ),
     forMember(
@@ -545,6 +897,12 @@ export function createMappings (): void {
     mapper,
     'DiscountDto',
     'Discount',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => source.startDate?.toDate())
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => source.endDate?.toDate())
+    ),
     forMember(
       (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toDate())
     ),
@@ -586,7 +944,13 @@ export function createMappings (): void {
   createMap<OrderLine, OrderLineDto>(
     mapper,
     'OrderLine',
-    'OrderLineDto'
+    'OrderLineDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromDate(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromDate(source.updatedAt))
+    )
   )
 
   createMap<Order, OrderDto>(
@@ -634,7 +998,13 @@ export function createMappings (): void {
   createMap<OrderLineDto, OrderLine>(
     mapper,
     'OrderLineDto',
-    'OrderLine'
+    'OrderLine',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toDate())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toDate())
+    )
   )
 
   createMap<OrderDto, Order>(
@@ -670,6 +1040,30 @@ export function createMappings (): void {
     ),
     forMember(
       (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromDate(source.updatedAt))
+    )
+  )
+
+  createMap<OrderResultRedis, OrderResult>(
+    mapper,
+    'OrderResultRedis',
+    'OrderResult',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<OrderResult, OrderResultRedis>(
+    mapper,
+    'OrderResult',
+    'OrderResultRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
     )
   )
 
@@ -826,7 +1220,13 @@ export function createMappings (): void {
   createMap<ShoppingCartProduct, ShoppingCartProductDto>(
     mapper,
     'ShoppingCartProduct',
-    'ShoppingCartProductDto'
+    'ShoppingCartProductDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromDate(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromDate(source.updatedAt))
+    )
   )
 
   createMap<ShoppingCart, ShoppingCartDto>(
@@ -850,7 +1250,13 @@ export function createMappings (): void {
   createMap<ShoppingCartProductDto, ShoppingCartProduct>(
     mapper,
     'ShoppingCartProductDto',
-    'ShoppingCartProduct'
+    'ShoppingCartProduct',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toDate())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toDate())
+    )
   )
 
   createMap<ShoppingCartDto, ShoppingCart>(
@@ -886,6 +1292,30 @@ export function createMappings (): void {
     ),
     forMember(
       (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromDate(source.updatedAt))
+    )
+  )
+
+  createMap<ShoppingCartResultRedis, ShoppingCartResult>(
+    mapper,
+    'ShoppingCartResultRedis',
+    'ShoppingCartResult',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<ShoppingCartResult, ShoppingCartResultRedis>(
+    mapper,
+    'ShoppingCartResult',
+    'ShoppingCartResultRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
     )
   )
 
@@ -936,6 +1366,1060 @@ export function createMappings (): void {
       (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toDate())
     )
   )
+
+  createMap<StoreFavorite, StoreFavoriteDto>(
+    mapper,
+    'StoreFavorite',
+    'StoreFavoriteDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromDate(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromDate(source.updatedAt))
+    )
+  )
+
+  createMap<StoreFavoriteDto, StoreFavorite>(
+    mapper,
+    'StoreFavoriteDto',
+    'StoreFavorite',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toDate())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toDate())
+    )
+  )
+
+  //* ********************* redis to dto / dto to redis metadata ************************
+
+  createMap<CategoryParentRedis, CategoryDtoParent>(
+    mapper,
+    'CategoryParentRedis',
+    'CategoryDtoParent'
+  )
+
+  createMap<CategoryDtoParent, CategoryParentRedis>(
+    mapper,
+    'CategoryDtoParent',
+    'CategoryParentRedis'
+  )
+
+  createMap<CategoryRedis, CategoryDto>(
+    mapper,
+    'CategoryRedis',
+    'CategoryDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<CategoryDto, CategoryRedis>(
+    mapper,
+    'CategoryDto',
+    'CategoryRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<DeliveryLocationRedis, DeliveryLocationDto>(
+    mapper,
+    'DeliveryLocationRedis',
+    'DeliveryLocationDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<DeliveryLocationDto, DeliveryLocationRedis>(
+    mapper,
+    'DeliveryLocationDto',
+    'DeliveryLocationRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<DiscountRedis, DiscountDto>(
+    mapper,
+    'DiscountRedis',
+    'DiscountDto',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => Timestamp.fromMillis(source.startDate))
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => Timestamp.fromMillis(source.endDate))
+    ),
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<DiscountDto, DiscountRedis>(
+    mapper,
+    'DiscountDto',
+    'DiscountRedis',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => source.startDate?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => source.endDate?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<OrderDeliveryLocationRedis, OrderDeliveryLocationDto>(
+    mapper,
+    'OrderDeliveryLocationRedis',
+    'OrderDeliveryLocationDto'
+  )
+
+  createMap<OrderDeliveryLocationDto, OrderDeliveryLocationRedis>(
+    mapper,
+    'OrderDeliveryLocationDto',
+    'OrderDeliveryLocationRedis'
+  )
+
+  createMap<OrderLineProductRedis, OrderLineProductDto>(
+    mapper,
+    'OrderLineProductRedis',
+    'OrderLineProductDto'
+  )
+
+  createMap<OrderLineProductDto, OrderLineProductRedis>(
+    mapper,
+    'OrderLineProductDto',
+    'OrderLineProductRedis'
+  )
+
+  createMap<OrderLineRedis, OrderLineDto>(
+    mapper,
+    'OrderLineRedis',
+    'OrderLineDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<OrderLineDto, OrderLineRedis>(
+    mapper,
+    'OrderLineDto',
+    'OrderLineRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<OrderPaymentMethodRedis, OrderPaymentMethodDto>(
+    mapper,
+    'OrderPaymentMethodRedis',
+    'OrderPaymentMethodDto'
+  )
+
+  createMap<OrderPaymentMethodDto, OrderPaymentMethodRedis>(
+    mapper,
+    'OrderPaymentMethodDto',
+    'OrderPaymentMethodRedis'
+  )
+
+  createMap<OrderStoreRedis, OrderStoreDto>(
+    mapper,
+    'OrderStoreRedis',
+    'OrderStoreDto'
+  )
+
+  createMap<OrderStoreDto, OrderStoreRedis>(
+    mapper,
+    'OrderStoreDto',
+    'OrderStoreRedis'
+  )
+
+  createMap<OrderUserRedis, OrderUserDto>(
+    mapper,
+    'OrderUserRedis',
+    'OrderUserDto'
+  )
+
+  createMap<OrderUserDto, OrderUserRedis>(
+    mapper,
+    'OrderUserDto',
+    'OrderUserRedis'
+  )
+
+  createMap<OrderRedis, OrderDto>(
+    mapper,
+    'OrderRedis',
+    'OrderDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<OrderDto, OrderRedis>(
+    mapper,
+    'OrderDto',
+    'OrderRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<PaymentRedis, PaymentDto>(
+    mapper,
+    'PaymentRedis',
+    'PaymentDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<PaymentDto, PaymentRedis>(
+    mapper,
+    'PaymentDto',
+    'PaymentRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<ProductCategoryRedis, ProductCategoryDto>(
+    mapper,
+    'ProductCategoryRedis',
+    'ProductCategoryDto'
+  )
+
+  createMap<ProductCategoryDto, ProductCategoryRedis>(
+    mapper,
+    'ProductCategoryDto',
+    'ProductCategoryRedis'
+  )
+
+  createMap<ProductDiscountRedis, ProductDiscountDto>(
+    mapper,
+    'ProductDiscountRedis',
+    'ProductDiscountDto',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => Timestamp.fromMillis(source.startDate))
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => Timestamp.fromMillis(source.endDate))
+    )
+  )
+
+  createMap<ProductDiscountDto, ProductDiscountRedis>(
+    mapper,
+    'ProductDiscountDto',
+    'ProductDiscountRedis',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => source.startDate?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => source.endDate?.toMillis())
+    )
+  )
+
+  createMap<ProductFavoriteRedis, ProductFavoriteDto>(
+    mapper,
+    'ProductFavoriteRedis',
+    'ProductFavoriteDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<ProductFavoriteDto, ProductFavoriteRedis>(
+    mapper,
+    'ProductFavoriteDto',
+    'ProductFavoriteRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<ProductStoreRedis, ProductStoreDto>(
+    mapper,
+    'ProductStoreRedis',
+    'ProductStoreDto'
+  )
+
+  createMap<ProductStoreDto, ProductStoreRedis>(
+    mapper,
+    'ProductStoreDto',
+    'ProductStoreRedis'
+  )
+
+  createMap<ProductRedis, ProductDto>(
+    mapper,
+    'ProductRedis',
+    'ProductDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<ProductDto, ProductRedis>(
+    mapper,
+    'ProductDto',
+    'ProductRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<ProductReviewRedis, ProductReviewDto>(
+    mapper,
+    'ProductReviewRedis',
+    'ProductReviewDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<ProductReviewDto, ProductReviewRedis>(
+    mapper,
+    'ProductReviewDto',
+    'ProductReviewRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<ShoppingCartProductRedis, ShoppingCartProductDto>(
+    mapper,
+    'ShoppingCartProductRedis',
+    'ShoppingCartProductDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<ShoppingCartProductDto, ShoppingCartProductRedis>(
+    mapper,
+    'ShoppingCartProductDto',
+    'ShoppingCartProductRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<ShoppingCartStoreRedis, ShoppingCartStoreDto>(
+    mapper,
+    'ShoppingCartStoreRedis',
+    'ShoppingCartStoreDto'
+  )
+
+  createMap<ShoppingCartStoreDto, ShoppingCartStoreRedis>(
+    mapper,
+    'ShoppingCartStoreDto',
+    'ShoppingCartStoreRedis'
+  )
+
+  createMap<ShoppingCartRedis, ShoppingCartDto>(
+    mapper,
+    'ShoppingCartRedis',
+    'ShoppingCartDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<ShoppingCartDto, ShoppingCartRedis>(
+    mapper,
+    'ShoppingCartDto',
+    'ShoppingCartRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<StoreFavoriteRedis, StoreFavoriteDto>(
+    mapper,
+    'StoreFavoriteRedis',
+    'StoreFavoriteDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<StoreFavoriteDto, StoreFavoriteRedis>(
+    mapper,
+    'StoreFavoriteDto',
+    'StoreFavoriteRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<StoreRedis, StoreDto>(
+    mapper,
+    'StoreRedis',
+    'StoreDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<StoreDto, StoreRedis>(
+    mapper,
+    'StoreDto',
+    'StoreRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+
+  createMap<StoreReviewRedis, StoreReviewDto>(
+    mapper,
+    'StoreReviewRedis',
+    'StoreReviewDto',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => Timestamp.fromMillis(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => Timestamp.fromMillis(source.updatedAt))
+    )
+  )
+
+  createMap<StoreReviewDto, StoreReviewRedis>(
+    mapper,
+    'StoreReviewDto',
+    'StoreReviewRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt?.toMillis())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt?.toMillis())
+    )
+  )
+  //* ***************************************************************
+
+  //* ********************* redis to domain / domain to redis metadata ************************
+
+  createMap<CategoryParentRedis, CategoryParent>(
+    mapper,
+    'CategoryParentRedis',
+    'CategoryParent'
+  )
+
+  createMap<CategoryParent, CategoryParentRedis>(
+    mapper,
+    'CategoryParent',
+    'CategoryParentRedis'
+  )
+
+  createMap<CategoryRedis, Category>(
+    mapper,
+    'CategoryRedis',
+    'Category',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<Category, CategoryRedis>(
+    mapper,
+    'Category',
+    'CategoryRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<DeliveryLocationRedis, DeliveryLocation>(
+    mapper,
+    'DeliveryLocationRedis',
+    'DeliveryLocation',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<DeliveryLocation, DeliveryLocationRedis>(
+    mapper,
+    'DeliveryLocation',
+    'DeliveryLocationRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<DiscountRedis, Discount>(
+    mapper,
+    'DiscountRedis',
+    'Discount',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => new Date(source.startDate))
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => new Date(source.endDate))
+    ),
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<Discount, DiscountRedis>(
+    mapper,
+    'Discount',
+    'DiscountRedis',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => source.startDate.getTime())
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => source.endDate.getTime())
+    ),
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<OrderDeliveryLocationRedis, OrderDeliveryLocation>(
+    mapper,
+    'OrderDeliveryLocationRedis',
+    'OrderDeliveryLocation'
+  )
+
+  createMap<OrderDeliveryLocation, OrderDeliveryLocationRedis>(
+    mapper,
+    'OrderDeliveryLocation',
+    'OrderDeliveryLocationRedis'
+  )
+
+  createMap<OrderLineProductRedis, OrderLineProduct>(
+    mapper,
+    'OrderLineProductRedis',
+    'OrderLineProduct'
+  )
+
+  createMap<OrderLineProduct, OrderLineProductRedis>(
+    mapper,
+    'OrderLineProduct',
+    'OrderLineProductRedis'
+  )
+
+  createMap<OrderLineRedis, OrderLine>(
+    mapper,
+    'OrderLineRedis',
+    'OrderLine',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<OrderLine, OrderLineRedis>(
+    mapper,
+    'OrderLine',
+    'OrderLineRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<OrderPaymentMethodRedis, OrderPaymentMethod>(
+    mapper,
+    'OrderPaymentMethodRedis',
+    'OrderPaymentMethod'
+  )
+
+  createMap<OrderPaymentMethod, OrderPaymentMethodRedis>(
+    mapper,
+    'OrderPaymentMethod',
+    'OrderPaymentMethodRedis'
+  )
+
+  createMap<OrderStoreRedis, OrderStore>(
+    mapper,
+    'OrderStoreRedis',
+    'OrderStore'
+  )
+
+  createMap<OrderStore, OrderStoreRedis>(
+    mapper,
+    'OrderStore',
+    'OrderStoreRedis'
+  )
+
+  createMap<OrderUserRedis, OrderUser>(
+    mapper,
+    'OrderUserRedis',
+    'OrderUser'
+  )
+
+  createMap<OrderUser, OrderUserRedis>(
+    mapper,
+    'OrderUser',
+    'OrderUserRedis'
+  )
+
+  createMap<OrderRedis, Order>(
+    mapper,
+    'OrderRedis',
+    'Order',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<Order, OrderRedis>(
+    mapper,
+    'Order',
+    'OrderRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<OrderResultRedis, Order>(
+    mapper,
+    'OrderResultRedis',
+    'Order',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<Order, OrderResultRedis>(
+    mapper,
+    'Order',
+    'OrderResultRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<PaymentRedis, Payment>(
+    mapper,
+    'PaymentRedis',
+    'Payment',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<Payment, PaymentRedis>(
+    mapper,
+    'Payment',
+    'PaymentRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<ProductCategoryRedis, ProductCategory>(
+    mapper,
+    'ProductCategoryRedis',
+    'ProductCategory'
+  )
+
+  createMap<ProductCategory, ProductCategoryRedis>(
+    mapper,
+    'ProductCategory',
+    'ProductCategoryRedis'
+  )
+
+  createMap<ProductDiscountRedis, ProductDiscount>(
+    mapper,
+    'ProductDiscountRedis',
+    'ProductDiscount',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => new Date(source.startDate))
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => new Date(source.endDate))
+    )
+  )
+
+  createMap<ProductDiscount, ProductDiscountRedis>(
+    mapper,
+    'ProductDiscount',
+    'ProductDiscountRedis',
+    forMember(
+      (destination) => destination.startDate, mapFrom((source) => source.startDate.getTime())
+    ),
+    forMember(
+      (destination) => destination.endDate, mapFrom((source) => source.endDate.getTime())
+    )
+  )
+
+  createMap<ProductFavoriteRedis, ProductFavorite>(
+    mapper,
+    'ProductFavoriteRedis',
+    'ProductFavorite',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<ProductFavorite, ProductFavoriteRedis>(
+    mapper,
+    'ProductFavorite',
+    'ProductFavoriteRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<ProductStoreRedis, ProductStore>(
+    mapper,
+    'ProductStoreRedis',
+    'ProductStore'
+  )
+
+  createMap<ProductStore, ProductStoreRedis>(
+    mapper,
+    'ProductStore',
+    'ProductStoreRedis'
+  )
+
+  createMap<ProductRedis, Product>(
+    mapper,
+    'ProductRedis',
+    'Product',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<Product, ProductRedis>(
+    mapper,
+    'Product',
+    'ProductRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<ProductReviewRedis, ProductReview>(
+    mapper,
+    'ProductReviewRedis',
+    'ProductReview',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<ProductReview, ProductReviewRedis>(
+    mapper,
+    'ProductReview',
+    'ProductReviewRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<ShoppingCartProductRedis, ShoppingCartProduct>(
+    mapper,
+    'ShoppingCartProductRedis',
+    'ShoppingCartProduct',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<ShoppingCartProduct, ShoppingCartProductRedis>(
+    mapper,
+    'ShoppingCartProduct',
+    'ShoppingCartProductRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<ShoppingCartStoreRedis, ShoppingCartStore>(
+    mapper,
+    'ShoppingCartStoreRedis',
+    'ShoppingCartStore'
+  )
+
+  createMap<ShoppingCartStore, ShoppingCartStoreRedis>(
+    mapper,
+    'ShoppingCartStore',
+    'ShoppingCartStoreRedis'
+  )
+
+  createMap<ShoppingCartRedis, ShoppingCart>(
+    mapper,
+    'ShoppingCartRedis',
+    'ShoppingCart',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<ShoppingCart, ShoppingCartRedis>(
+    mapper,
+    'ShoppingCart',
+    'ShoppingCartRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<ShoppingCartResultRedis, ShoppingCart>(
+    mapper,
+    'ShoppingCartResultRedis',
+    'ShoppingCart',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<ShoppingCart, ShoppingCartResultRedis>(
+    mapper,
+    'ShoppingCart',
+    'ShoppingCartResultRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<StoreFavoriteRedis, StoreFavorite>(
+    mapper,
+    'StoreFavoriteRedis',
+    'StoreFavorite',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<StoreFavorite, StoreFavoriteRedis>(
+    mapper,
+    'StoreFavorite',
+    'StoreFavoriteRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<StoreRedis, Store>(
+    mapper,
+    'StoreRedis',
+    'Store',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<Store, StoreRedis>(
+    mapper,
+    'Store',
+    'StoreRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+
+  createMap<StoreReviewRedis, StoreReview>(
+    mapper,
+    'StoreReviewRedis',
+    'StoreReview',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => new Date(source.createdAt))
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => new Date(source.updatedAt))
+    )
+  )
+
+  createMap<StoreReview, StoreReviewRedis>(
+    mapper,
+    'StoreReview',
+    'StoreReviewRedis',
+    forMember(
+      (destination) => destination.createdAt, mapFrom((source) => source.createdAt.getTime())
+    ),
+    forMember(
+      (destination) => destination.updatedAt, mapFrom((source) => source.updatedAt.getTime())
+    )
+  )
+  //* ***************************************************************
+
+  //* ********* search dto to redis / redis to search dto ***********
+
+  createMap<SearchResultContentRedis, SearchResultContent>(
+    mapper,
+    'SearchResultContentRedis',
+    'SearchResultContent'
+  )
+
+  createMap<SearchResultContent, SearchResultContentRedis>(
+    mapper,
+    'SearchResultContent',
+    'SearchResultContentRedis'
+  )
+
+  //* *****************************************************************
 }
 
 export default mapper

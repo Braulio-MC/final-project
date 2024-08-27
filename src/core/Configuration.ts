@@ -21,6 +21,10 @@ export const googleConfig = {
   firebaseAppCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS
 }
 
+export const firebaseConfig = {
+  bucketRef: process.env.FIRE_STORAGE_BUCKET
+}
+
 export const firestoreConfig = {
   category: process.env.FIRESTORE_COLLECTION_CATEGORY,
   deliveryLocation: process.env.FIRESTORE_COLLECTION_DELIVERY_LOCATION,
@@ -36,12 +40,26 @@ export const firestoreConfig = {
   store: process.env.FIRESTORE_COLLECTION_STORE,
   storeFavorite: process.env.FIRESTORE_COLLECTION_STORE_FAVORITE,
   storeReview: process.env.FIRESTORE_COLLECTION_STORE_REVIEW,
-  paginationKey: process.env.FIRESTORE_COLLECTION_PAGINATION_KEY
+  user: process.env.FIRESTORE_COLLECTION_USER,
+  userToken: process.env.FIRESTORE_SUBCOLLECTION_USER_TOKEN,
+  paginationKey: process.env.FIRESTORE_COLLECTION_PAGINATION_KEY,
+  discountDefaultId: process.env.FIRESTORE_COLLECTION_DISCOUNT_DEFAULT_ID,
+  discountDefaultPercentage: process.env.FIRESTORE_COLLECTION_DISCOUNT_DEFAULT_PERCENTAGE,
+  discountDefaultDate: process.env.FIRESTORE_COLLECTION_DISCOUNT_DEFAULT_DATE
 }
 
 export const algoliaConfig = {
   applicationId: process.env.ALGOLIA_APPLICATION_ID,
   apiKey: process.env.ALGOLIA_SEARCH_API_KEY,
-  storeIndex: process.env.ALGOLIA_STORE_INDEX,
-  productIndex: process.env.ALGOLIA_PRODUCT_INDEX
+  index: process.env.ALGOLIA_INDEX
+}
+
+export const redisConfig = {
+  serverUrl: process.env.REDIS_SERVER_URL
+}
+
+export const getStreamConfig = {
+  apiKey: process.env.GET_STREAM_API_KEY,
+  apiSecret: process.env.GET_STREAM_API_SECRET,
+  serverSideUserId: process.env.GET_STREAM_SERVER_SIDE_USER_ID
 }

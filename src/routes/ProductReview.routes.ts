@@ -31,7 +31,11 @@ router.get(
   pagingValidation,
   productReviewController.paging.bind(productReviewController)
 )
-
+router.post(
+  '/product-reviews/exists/criteria',
+  criteriaValidation,
+  productReviewController.existsByCriteria.bind(productReviewController)
+)
 router.post(
   '/product-reviews/criteria',
   criteriaValidation,

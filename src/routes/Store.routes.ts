@@ -3,17 +3,20 @@ import { Router } from 'express'
 //   checkAccessToken,
 //   checkRequiredPermissions
 // } from '../middleware/auth0.middleware'
-import { criteriaValidation, pagingValidation, searchValidation, storesValidation } from '../validation/validator'
+import { criteriaValidation, pagingValidation, storesValidation } from '../validation/validator'
 import { storeController } from '../di/Container'
+import { multerUpload } from '../core/MulterHelper'
 const router = Router()
 
 router.post(
   '/stores',
+  multerUpload.single('image'),
   storesValidation.createStore,
   storeController.create.bind(storeController)
 )
 router.put(
   '/stores/:id',
+  multerUpload.single('image'),
   storesValidation.updateStore,
   storeController.update.bind(storeController)
 )
@@ -31,14 +34,14 @@ router.get(
   storeController.paging.bind(storeController)
 )
 router.post(
+  '/stores/exists/criteria',
+  criteriaValidation,
+  storeController.existsByCriteria.bind(storeController)
+)
+router.post(
   '/stores/criteria',
   criteriaValidation,
   storeController.pagingByCriteria.bind(storeController)
-)
-router.get(
-  '/stores/search',
-  searchValidation,
-  storeController.search.bind(storeController)
 )
 
 export default router

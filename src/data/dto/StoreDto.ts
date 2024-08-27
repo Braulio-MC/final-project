@@ -6,7 +6,7 @@ export default interface StoreDto {
   description: string | undefined
   email: string | undefined
   phoneNumber: string | undefined
-  image: URL | undefined
+  image: string | undefined
   userId: string | undefined
   createdAt: Timestamp | undefined
   updatedAt: Timestamp | undefined

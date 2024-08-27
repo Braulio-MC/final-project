@@ -5,27 +5,58 @@ import helmet from 'helmet'
 // import swaggerUI from "swagger-ui-express"
 // import swaggerJSDoc from "swagger-jsdoc"
 // import { appVars } from "./config/configuration.js"
-// import userRoutes from './routes/user.routes'
-// import roleRoutes from './routes/role.routes'
+import userRoutes from './routes/User.routes'
 import paymentRoutes from './routes/Payment.routes'
 import storeRoutes from './routes/Store.routes'
 import productRoutes from './routes/Product.routes'
 import deliveryLocationRoutes from './routes/DeliveryLocation.routes'
 import orderRoutes from './routes/Order.routes'
+import orderlineRoutes from './routes/Orderline.routes'
 import categoryRoutes from './routes/Category.routes'
 import cartRoutes from './routes/ShoppingCart.routes'
+import cartItemRoutes from './routes/ShoppingCartItem.routes'
 import discountRoutes from './routes/Discount.routes'
 import productReviewRoutes from './routes/ProductReview.routes'
 import productFavoriteRoutes from './routes/ProductFavorite.routes'
 import storeReviewRoutes from './routes/StoreReview.routes'
 import storeFavoriteRoutes from './routes/StoreFavorite.routes'
 import searchRoutes from './routes/Search.routes'
+import tokenRoutes from './routes/Token.routes'
+import channelRoutes from './routes/Channel.routes'
 import errorHandler from './middleware/error.middleware'
 import notFoundHandler from './middleware/not-found.middleware'
 import { checkIncomingJson } from './core/Utils'
 import { createMappings } from './core/Mapper'
 
 const app = express()
+
+createMappings()
+app.use(helmet())
+app.use(express.json({
+  verify: checkIncomingJson
+}))
+app.use(paymentRoutes)
+app.use(storeRoutes)
+app.use(productRoutes)
+app.use(deliveryLocationRoutes)
+app.use(orderRoutes)
+app.use(orderlineRoutes)
+app.use(categoryRoutes)
+app.use(cartRoutes)
+app.use(cartItemRoutes)
+app.use(discountRoutes)
+app.use(productReviewRoutes)
+app.use(productFavoriteRoutes)
+app.use(storeReviewRoutes)
+app.use(storeFavoriteRoutes)
+app.use(searchRoutes)
+app.use(tokenRoutes)
+app.use(channelRoutes)
+app.use(userRoutes)
+app.use(notFoundHandler)
+app.use(errorHandler)
+
+export default app
 
 // const swaggerOptions = {
 //     definition: {
@@ -59,28 +90,3 @@ const app = express()
 
 // app.use("/docs", swaggerUI.serve, swaggerUI.setup(specs))
 // app.use(cors(corsOptions))
-
-createMappings()
-app.use(helmet())
-app.use(express.json({
-  verify: checkIncomingJson
-}))
-// app.use(userRoutes)
-// app.use(roleRoutes)
-app.use(paymentRoutes)
-app.use(storeRoutes)
-app.use(productRoutes)
-app.use(deliveryLocationRoutes)
-app.use(orderRoutes)
-app.use(categoryRoutes)
-app.use(cartRoutes)
-app.use(discountRoutes)
-app.use(productReviewRoutes)
-app.use(productFavoriteRoutes)
-app.use(storeReviewRoutes)
-app.use(storeFavoriteRoutes)
-app.use(searchRoutes)
-app.use(notFoundHandler)
-app.use(errorHandler)
-
-export default app

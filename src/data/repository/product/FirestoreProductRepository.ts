@@ -4,8 +4,7 @@ import IProductRepository from './IProductRepository'
 import { CollectionReference, FieldPath, Firestore, Timestamp } from 'firebase-admin/firestore'
 import Criteria from '../../../core/criteria/Criteria'
 import FirestoreCriteriaConverter from '../../persistance/firestore/FirestoreCriteriaConverter'
-import { PagingResult, ProductSearchResult } from '../../../types'
-import { SearchIndex } from 'algoliasearch'
+import { PagingResult } from '../../../types'
 import moment from 'moment'
 import { firestoreConfig } from '../../../core/Configuration'
 import OrderStatuses from '../../../core/OrderStatuses'
@@ -26,14 +25,14 @@ export default class FirestoreProductRepository implements IProductRepository {
 
   constructor (
     @inject('FirestoreDB') private readonly firestoreDB: Firestore,
-    @inject(FirestoreCriteriaConverter) private readonly converter: FirestoreCriteriaConverter,
-    @inject('ProductAlgoliaIndex') private readonly algoliaIndex: SearchIndex
+    @inject(FirestoreCriteriaConverter) private readonly converter: FirestoreCriteriaConverter
   ) {
     this._collectionRef = this.firestoreDB.collection(this._collectionName) as CollectionReference<ProductDto>
   }
 
-  async create (item: ProductDto): Promise<void> {
-    await this._collectionRef.add(item)
+  async create (item: ProductDto): Promise<string> {
+    const documentRef = await this._collectionRef.add(item)
+    return documentRef.id
   }
 
   async update (id: string, item: Partial<ProductDto>): Promise<void> {
@@ -70,22 +69,6 @@ export default class FirestoreProductRepository implements IProductRepository {
       })
     }
     await batch.commit()
-  }
-
-  async search (query: string, perPage: number): Promise<ProductSearchResult[]> {
-    const result = await this.algoliaIndex.search(query, {
-      hitsPerPage: perPage
-    })
-    const hits = result.hits.map(hit => {
-      const product: ProductSearchResult = {
-        id: hit.objectID,
-        name: 'name' in hit ? hit.name as string : '',
-        categoryName: 'category.name' in hit ? hit['category.name'] as string : '',
-        storeName: 'store.name' in hit ? hit['store.name'] as string : ''
-      }
-      return product
-    })
-    return hits
   }
 
   async paging (limit: number, after: string, before: string): Promise<PagingResult<ProductDto>> {
@@ -226,6 +209,20 @@ export default class FirestoreProductRepository implements IProductRepository {
         )
       }
     }
+  }
+
+  async existsByCriteria (criteria: Criteria): Promise<boolean> {
+    const convertResult = this.converter.convert(criteria)
+    let ref = this._collectionRef.orderBy(this._paginationKey)
+    convertResult.filters.forEach(filter => {
+      ref = ref.where(filter.field, filter.operator, filter.value)
+    })
+    const limit = convertResult.limit
+    if (convertResult.sort.field !== '') {
+      ref = ref.orderBy(convertResult.sort.field, convertResult.sort.direction)
+    }
+    const querySnapshot = await ref.select('createdAt').limit(limit).get()
+    return !querySnapshot.empty
   }
 
   async pagingByCriteria (criteria: Criteria): Promise<PagingResult<ProductDto>> {

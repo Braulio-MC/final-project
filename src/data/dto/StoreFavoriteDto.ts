@@ -5,7 +5,7 @@ export default interface StoreFavoriteDto {
   userId: string | undefined
   storeId: string | undefined
   name: string | undefined
-  image: URL | undefined
+  image: string | undefined
   description: string | undefined
   email: string | undefined
   phoneNumber: string | undefined

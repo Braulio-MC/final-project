@@ -1,12 +1,11 @@
 import { inject, singleton } from 'tsyringe'
 import ShoppingCartDto from '../../dto/ShoppingCartDto'
-import IShoppingCartRepository from './IShoppingCartRepository'
 import { CollectionReference, Firestore } from 'firebase-admin/firestore'
 import Criteria from '../../../core/criteria/Criteria'
 import FirestoreCriteriaConverter from '../../persistance/firestore/FirestoreCriteriaConverter'
 import { PagingResult, ShoppingCartResult } from '../../../types'
 import { firestoreConfig } from '../../../core/Configuration'
-import ShoppingCartProductDto from '../../dto/ShoppingCartProductDto'
+import IShoppingCartRepository from './IShoppingCartRepository'
 
 @singleton()
 export default class FirestoreShoppingCartRepository implements IShoppingCartRepository {
@@ -22,20 +21,13 @@ export default class FirestoreShoppingCartRepository implements IShoppingCartRep
     this._collectionRef = this.firestoreDB.collection(this._collectionName) as CollectionReference<ShoppingCartDto>
   }
 
-  async create (shoppingCart: ShoppingCartDto, products: ShoppingCartProductDto[]): Promise<void> {
-    const documentRef = await this._collectionRef.add(shoppingCart)
-    for (const product of products) {
-      await documentRef.collection(this._subCollectionName).add(product)
-    }
+  async create (item: ShoppingCartDto): Promise<string> {
+    const documentRef = await this._collectionRef.add(item)
+    return documentRef.id
   }
 
-  async update (id: string, shoppingCart: Partial<ShoppingCartDto>, products: ShoppingCartProductDto[]): Promise<void> {
-    await this._collectionRef.doc(id).update(shoppingCart)
-    // const documentRef = this._collectionRef.doc(id)
-    for (const product of products) {
-      // await documentRef.collection(this._subCollectionName).doc(product.id).update(product)
-      console.log(product)
-    }
+  async update (id: string, item: Partial<ShoppingCartDto>): Promise<void> {
+    await this._collectionRef.doc(id).update(item)
   }
 
   async paging (limit: number, after: string, before: string): Promise<PagingResult<ShoppingCartResult>> {
@@ -58,7 +50,10 @@ export default class FirestoreShoppingCartRepository implements IShoppingCartRep
           name: product.data()?.name,
           image: product.data()?.image,
           price: product.data()?.price,
-          quantity: product.data()?.quantity
+          quantity: product.data()?.quantity,
+          createdAt: product.data()?.createdAt,
+          updatedAt: product.data()?.updatedAt,
+          paginationKey: product.data()?.paginationKey
         }))
         const product: ShoppingCartResult = {
           id: doc.id,
@@ -95,7 +90,10 @@ export default class FirestoreShoppingCartRepository implements IShoppingCartRep
         name: product.data()?.name,
         image: product.data()?.image,
         price: product.data()?.price,
-        quantity: product.data()?.quantity
+        quantity: product.data()?.quantity,
+        createdAt: product.data()?.createdAt,
+        updatedAt: product.data()?.updatedAt,
+        paginationKey: product.data()?.paginationKey
       }))
       const one: ShoppingCartResult = {
         id: documentRef.id,
@@ -117,6 +115,20 @@ export default class FirestoreShoppingCartRepository implements IShoppingCartRep
   async delete (id: string): Promise<void> {
     const documentRef = this._collectionRef.doc(id)
     await this.firestoreDB.recursiveDelete(documentRef) //* Managing subcollection delete
+  }
+
+  async existsByCriteria (criteria: Criteria): Promise<boolean> {
+    const convertResult = this.converter.convert(criteria)
+    let ref = this._collectionRef.orderBy(this._paginationKey)
+    convertResult.filters.forEach(filter => {
+      ref = ref.where(filter.field, filter.operator, filter.value)
+    })
+    const limit = convertResult.limit
+    if (convertResult.sort.field !== '') {
+      ref = ref.orderBy(convertResult.sort.field, convertResult.sort.direction)
+    }
+    const querySnapshot = await ref.select('createdAt').limit(limit).get()
+    return !querySnapshot.empty
   }
 
   async pagingByCriteria (criteria: Criteria): Promise<PagingResult<ShoppingCartResult>> {
@@ -149,7 +161,10 @@ export default class FirestoreShoppingCartRepository implements IShoppingCartRep
           name: product.data()?.name,
           image: product.data()?.image,
           price: product.data()?.price,
-          quantity: product.data()?.quantity
+          quantity: product.data()?.quantity,
+          createdAt: product.data()?.createdAt,
+          updatedAt: product.data()?.updatedAt,
+          paginationKey: product.data()?.paginationKey
         }))
         const product: ShoppingCartResult = {
           id: doc.id,
