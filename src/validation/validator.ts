@@ -498,14 +498,6 @@ export const storeFavoritesValidation = {
   ]
 }
 
-export const tokenValidation = {
-  createToken: [
-    body('userId')
-      .notEmpty().withMessage('User ID expected')
-      .isString().withMessage('User ID must be string')
-  ]
-}
-
 export const pagingValidation = [
   query('limit')
     .optional()
@@ -573,6 +565,14 @@ export const criteriaValidation = [
   ...pagingValidation
 ]
 
+export const tokenValidation = {
+  createToken: [
+    body('userId')
+      .notEmpty().withMessage('User ID expected')
+      .isString().withMessage('User ID must be string')
+  ]
+}
+
 export const channelValidation = {
   createChannel: [
     body('type')
@@ -590,7 +590,13 @@ export const channelValidation = {
     body('options.blocked')
       .optional()
       .isBoolean().withMessage('Blocked must be boolean')
-      .default(false)
+      .default(false),
+    body('options.members')
+      .optional()
+      .isArray({ min: 2 }).withMessage('Members list must contain at least two IDs'),
+    body('options.members.*')
+      .notEmpty().withMessage('Member ID expected')
+      .isString().withMessage('Member ID must be string')
   ],
   createChannelDistinct: [
     body('type')

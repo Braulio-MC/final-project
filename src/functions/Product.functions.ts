@@ -91,15 +91,15 @@ export const update = v2.https.onRequest(async (request, response) => {
       updatedAt
     }
     const updateProductFavoritesObj: { [k: string]: any } = {
-      name,
-      description,
+      productName: name,
+      productDescription: description,
       updatedAt
     }
     const updateShoppingCartProductsObj: { [k: string]: any } = {
-      name,
-      description,
-      price,
-      discount: {
+      'product.name': name,
+      'product.description': description,
+      'product.price': price,
+      'product.discount': {
         id: discountId,
         percentage: discountPercentage,
         startDate: startDateTimestamp,
@@ -109,8 +109,8 @@ export const update = v2.https.onRequest(async (request, response) => {
     }
     if (image !== '') {
       updateObj.image = image
-      updateProductFavoritesObj.image = image
-      updateShoppingCartProductsObj.image = image
+      updateProductFavoritesObj.productImage = image
+      updateShoppingCartProductsObj['product.image'] = image
     }
     const productRef = db.collection(collectionName).doc(id)
     batch.update(productRef, updateObj)
@@ -138,6 +138,7 @@ export const update = v2.https.onRequest(async (request, response) => {
   }
 })
 
+// Delete product image from storage
 export const remove = v2.https.onRequest(async (request, response) => {
   try {
     const collectionName = firestoreConfig.product as string

@@ -9,7 +9,7 @@ export default class ChannelService implements IChannelService {
     @inject(GetStreamChannelRepository) private readonly channelRepository: GetStreamChannelRepository
   ) {}
 
-  async create (type: GetStreamMessagingChannelTypes, id: string, options: { blocked?: boolean, name?: string } = {}): Promise<string> {
+  async create (type: GetStreamMessagingChannelTypes, id: string, options: { blocked?: boolean, name?: string, members?: string[] } = {}): Promise<string> {
     return await this.channelRepository.create(type, id, options)
   }
 

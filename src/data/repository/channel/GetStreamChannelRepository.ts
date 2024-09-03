@@ -12,10 +12,11 @@ export default class GetStreamChannelRepository implements IChannelRepository {
     @inject('GetStreamClient') private readonly client: StreamChat
   ) {}
 
-  async create (type: GetStreamMessagingChannelTypes, id: string, options: { blocked?: boolean, name?: string } = {}): Promise<string> {
+  async create (type: GetStreamMessagingChannelTypes, id: string, options: { blocked?: boolean, name?: string, members?: string[] } = {}): Promise<string> {
     const channel = this.client.channel(type, id, {
       blocked: options.blocked,
       name: options.name,
+      members: options.members,
       created_by_id: this._serverSideUserId
     })
     const response = await channel.create()
