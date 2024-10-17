@@ -1,9 +1,10 @@
 import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as v2 from 'firebase-functions/v2'
 import { StatusCodes } from 'http-status-codes'
-import { db } from '../core/FirebaseHelper'
+import { db, firebaseStorage } from '../core/FirebaseHelper'
 import { firestoreConfig } from '../core/Configuration'
 import OrderStatuses from '../core/OrderStatuses'
+import ErrorResponse from '../core/ErrorResponse'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {
@@ -138,30 +139,38 @@ export const update = v2.https.onRequest(async (request, response) => {
   }
 })
 
-// Delete product image from storage
 export const remove = v2.https.onRequest(async (request, response) => {
   try {
     const collectionName = firestoreConfig.product as string
-    const orderItemsCollectionName = firestoreConfig.orderLines as string
+    const orderCollectionName = firestoreConfig.order as string
+    const orderLinesCollectionName = firestoreConfig.orderLines as string
     const productFavoritesCollectionName = firestoreConfig.productFavorite as string
     const productReviewsCollectionName = firestoreConfig.productReview as string
     const shoppingCartProductsCollectionName = firestoreConfig.shoppingCartProducts as string
     const id = request.body.data.id
     if (typeof id !== 'string') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must be a string' })
-      return
+      throw new Error('id must be a string')
     }
     if (id === '') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must not be empty' })
-      return
+      throw new Error('id must not be empty')
     }
-    const ordersQuerySnapshot = await db.collectionGroup(orderItemsCollectionName)
-      .where(new FieldPath('product', 'id'), '==', id)
-      .where('status', 'not-in', [OrderStatuses.DELIVERED, OrderStatuses.CANCELLED])
+    const ordersQuerySnapshot = await db.collection(orderCollectionName)
+      .where('status', '!=', OrderStatuses.DELIVERED)
       .get()
-    if (ordersQuerySnapshot.empty) {
+    let isProductInNonDeliveredOrder = false
+    for (const order of ordersQuerySnapshot.docs) {
+      const productsSnapshot = await order.ref.collection(orderLinesCollectionName)
+        .where(new FieldPath('product', 'id'), '==', id)
+        .get()
+      if (!productsSnapshot.empty) {
+        isProductInNonDeliveredOrder = true
+        break
+      }
+    }
+    if (!isProductInNonDeliveredOrder) {
       const batch = db.batch()
       const productRef = db.collection(collectionName).doc(id)
+      const productImageUrl = await (await productRef.get()).data()?.image
       batch.delete(productRef)
       const productFavoritesQuerySnapshot = await db.collection(productFavoritesCollectionName)
         .where('productId', '==', id)
@@ -187,13 +196,27 @@ export const remove = v2.https.onRequest(async (request, response) => {
           batch.delete(shoppingCartProduct.ref)
         })
       }
-      await batch.commit()
-      response.status(StatusCodes.OK).send({ data: 'Product removed successfully' })
+      batch.commit()
+        .then(async _ => {
+          // Delete product image from storage
+          // development image path
+          const image = decodeURIComponent(productImageUrl.split('.com/')[1])
+          // production image path
+          // const image = decodeURIComponent(productImageUrl.split('/o/')[1].split('?alt=media')[0])
+          if (image !== '') {
+            await firebaseStorage.bucket().file(image).delete()
+          }
+          response.status(StatusCodes.OK).send({ data: 'Product removed successfully' })
+        })
+        .catch(e => {
+          console.error('An error occurred when remove (product) was called', e)
+          throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
+        })
     } else {
-      response.status(StatusCodes.UNPROCESSABLE_ENTITY).send({ data: 'Product is in one or more orders' })
+      throw new Error('Product is in non-delivered order')
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('An error occurred when remove (product) was called', e)
-    response.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ data: 'Error removing product' })
+    throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
   }
 })

@@ -59,3 +59,37 @@ export const sendMessageToTopic = v2.https.onRequest(async (request, response) =
       throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
     })
 })
+
+export const sendMessageToUserDevices = v2.https.onRequest(async (request, response) => {
+  const userId = request.body.data.userId
+  const message = request.body.data.message
+  if (typeof userId !== 'string' || typeof message !== 'object') {
+    throw new Error('Invalid parameters: token must be a string and message must be an object')
+  }
+  if (userId === '' || Object.keys(message).length === 0) {
+    throw new Error('Invalid parameters: token must not be empty and message must not be empty')
+  }
+  if (!Object.keys(message).includes('notification')) {
+    throw new Error('Invalid parameters: message must contain a notification object')
+  }
+  // Retrive the tokens for the user id from firestore
+  const collectionName = firestoreConfig.user as string
+  const subCollectionName = firestoreConfig.userToken as string
+  const userTokens = await db.collection(collectionName)
+    .doc(userId)
+    .collection(subCollectionName)
+    .get()
+  const tokens = userTokens.docs.map(doc => doc.data().token)
+  if (tokens.length === 0) {
+    throw new Error('No tokens found for the user id')
+  }
+  message.tokens = tokens
+  firebaseMessaging.sendEachForMulticast(message)
+    .then(_ => {
+      response.status(StatusCodes.OK).send({ data: 'Message sent' })
+    })
+    .catch(e => {
+      console.error('An error occurred when sendMessageToUserDevices (messaging) was called:', e)
+      throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
+    })
+})

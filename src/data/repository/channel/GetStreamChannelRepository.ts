@@ -13,6 +13,15 @@ export default class GetStreamChannelRepository implements IChannelRepository {
   ) {}
 
   async create (type: GetStreamMessagingChannelTypes, id: string, options: { blocked?: boolean, name?: string, members?: string[] } = {}): Promise<string> {
+    const filter = { type, id: { $eq: id } }
+    const channels = await this.client.queryChannels(filter)
+    if (channels.length > 0) {
+      const channel = channels[0]
+      if (channel.id !== undefined) {
+        const id = `${type}:${channel.id}`
+        return id
+      }
+    }
     const channel = this.client.channel(type, id, {
       blocked: options.blocked,
       name: options.name,
@@ -20,15 +29,26 @@ export default class GetStreamChannelRepository implements IChannelRepository {
       created_by_id: this._serverSideUserId
     })
     const response = await channel.create()
-    return response.channel.id
+    const resultId = `${type}:${response.channel.id}`
+    return resultId
   }
 
   async createDistinct (type: GetStreamMessagingChannelTypes, members: string[]): Promise<string> {
+    const filter = { type, members: { $eq: members }, created_by_id: { $eq: this._serverSideUserId } }
+    const channels = await this.client.queryChannels(filter)
+    if (channels.length > 0) {
+      const channel = channels[0]
+      if (channel.id !== undefined) {
+        const id = `${type}:${channel.id}`
+        return id
+      }
+    }
     const channel = this.client.channel(type, {
       members,
       created_by_id: this._serverSideUserId
     })
     const response = await channel.create()
-    return response.channel.id
+    const resultId = `${type}:${response.channel.id}`
+    return resultId
   }
 }

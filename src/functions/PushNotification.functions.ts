@@ -34,7 +34,7 @@ export const create = v2.https.onRequest((request, response) => {
     })
 })
 
-export const remove = v2.https.onRequest((request, response) => {
+export const remove = v2.https.onRequest(async (request, response) => {
   const collectionName = firestoreConfig.user as string
   const subCollectionName = firestoreConfig.userToken as string
   const userId = request.body.data.userId
@@ -45,16 +45,24 @@ export const remove = v2.https.onRequest((request, response) => {
   if (userId === '' || token === '') {
     throw new ErrorResponse('userId and token must not be empty', StatusCodes.BAD_REQUEST)
   }
-  db.collection(collectionName)
+  const userTokens = await db.collection(collectionName)
     .doc(userId)
     .collection(subCollectionName)
-    .doc(token)
-    .delete()
-    .then(_ => {
-      response.status(StatusCodes.OK).send({ data: 'Token removed successfully' })
+    .where('userId', '==', userId)
+    .where('token', '==', token)
+    .get()
+  if (!userTokens.empty) {
+    const batch = db.batch()
+    userTokens.docs.forEach(doc => {
+      batch.delete(doc.ref)
     })
-    .catch(e => {
-      console.error('An error occurred when remove (push notification) was called:', e)
-      throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
-    })
+    batch.commit()
+      .then(_ => {
+        response.status(StatusCodes.OK).send({ data: 'Token removed successfully' })
+      })
+      .catch(e => {
+        console.error('An error occurred when remove (push notification) was called:', e)
+        throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
+      })
+  }
 })
