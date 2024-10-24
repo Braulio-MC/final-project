@@ -58,10 +58,6 @@ export const update = v2.https.onRequest(async (request, response) => {
     const startDateTimestamp = Timestamp.fromMillis(+discountStartDate.value)
     const endDateTimestamp = Timestamp.fromMillis(+discountEndDate.value)
     if (!usingDefaultDiscount) {
-      if (startDateTimestamp.toMillis() < Timestamp.now().toMillis()) {
-        response.status(StatusCodes.BAD_REQUEST).send({ data: 'discountStartDate must be in the future' })
-        return
-      }
       if (startDateTimestamp.toMillis() >= endDateTimestamp.toMillis()) {
         response.status(StatusCodes.BAD_REQUEST).send({ data: 'discountStartDate must be before discountEndDate' })
         return
