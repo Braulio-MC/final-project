@@ -195,12 +195,13 @@ export const remove = v2.https.onRequest(async (request, response) => {
       batch.commit()
         .then(async _ => {
           // Delete product image from storage
-          // development image path
-          const image = decodeURIComponent(productImageUrl.split('.com/')[1])
-          // production image path
-          // const image = decodeURIComponent(productImageUrl.split('/o/')[1].split('?alt=media')[0])
+          const image = decodeURIComponent(productImageUrl.split('/o/')[1].split('?alt=media')[0])
           if (image !== '') {
-            await firebaseStorage.bucket().file(image).delete()
+            const file = firebaseStorage.bucket().file(image)
+            const [exists] = await file.exists()
+            if (exists) {
+              await file.delete()
+            }
           }
           response.status(StatusCodes.OK).send({ data: 'Product removed successfully' })
         })
