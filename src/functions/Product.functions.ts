@@ -22,17 +22,18 @@ export const update = v2.https.onRequest(async (request, response) => {
     const categoryParentName = request.body.data.categoryParentName
     const storeId = request.body.data.storeId
     const storeName = request.body.data.storeName
+    const storeOwnerId = request.body.data.storeOwnerId
     const usingDefaultDiscount = request.body.data.usingDefaultDiscount
     const discountId = request.body.data.discountId
     const discountPercentage = request.body.data.discountPercentage
     const discountStartDate = request.body.data.discountStartDate
     const discountEndDate = request.body.data.discountEndDate
-    if (typeof id !== 'string' || typeof name !== 'string' || typeof description !== 'string' || typeof image !== 'string' || typeof categoryId !== 'string' || typeof categoryName !== 'string' || typeof categoryParentName !== 'string' || typeof storeId !== 'string' || typeof storeName !== 'string' || typeof discountId !== 'string') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name, description, image, categoryId, categoryName, categoryParentName, storeId, storeName, discountId must be strings' })
+    if (typeof id !== 'string' || typeof name !== 'string' || typeof description !== 'string' || typeof image !== 'string' || typeof categoryId !== 'string' || typeof categoryName !== 'string' || typeof categoryParentName !== 'string' || typeof storeId !== 'string' || typeof storeName !== 'string' || typeof storeOwnerId !== 'string' || typeof discountId !== 'string') {
+      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name, description, image, categoryId, categoryName, categoryParentName, storeId, storeName, storeOwnerId, discountId must be strings' })
       return
     }
-    if (id === '' || name === '' || description === '' || categoryId === '' || categoryName === '' || storeId === '' || storeName === '' || discountId === '') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name, description, categoryId, categoryName, storeId, storeName, discountId must not be empty' })
+    if (id === '' || name === '' || description === '' || categoryId === '' || categoryName === '' || storeId === '' || storeName === '' || storeOwnerId === '' || discountId === '') {
+      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name, description, categoryId, categoryName, storeId, storeName, storeOwnerId, discountId must not be empty' })
       return
     }
     if (typeof price !== 'number' || typeof quantity !== 'number' || typeof discountPercentage !== 'number') {
@@ -77,7 +78,8 @@ export const update = v2.https.onRequest(async (request, response) => {
       },
       store: {
         id: storeId,
-        name: storeName
+        name: storeName,
+        ownerId: storeOwnerId
       },
       discount: {
         id: discountId,
