@@ -142,4 +142,3 @@ storage.rules
 service_account_key.json
 .firebaserc
 firebase/
-tmp/

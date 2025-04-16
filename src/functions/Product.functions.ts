@@ -3,8 +3,8 @@ import * as v2 from 'firebase-functions/v2'
 import { StatusCodes } from 'http-status-codes'
 import { db, firebaseStorage } from '../core/FirebaseHelper'
 import { firestoreConfig } from '../core/Configuration'
-import OrderStatuses from '../core/OrderStatuses'
 import ErrorResponse from '../core/ErrorResponse'
+import OrderStatuses from '../core/OrderStatuses'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {

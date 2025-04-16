@@ -12,7 +12,7 @@ export default class ChannelController {
     @inject(ChannelService) private readonly service: ChannelService
   ) {}
 
-  async create (req: Request, res: Response, next: NextFunction): Promise<void> {
+  create (req: Request, res: Response, next: NextFunction): void {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
       const { type, id, options } = req.body
@@ -31,7 +31,7 @@ export default class ChannelController {
     }
   }
 
-  async createDistinct (req: Request, res: Response, next: NextFunction): Promise<void> {
+  createDistinct (req: Request, res: Response, next: NextFunction): void {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
       const { type, members } = req.body

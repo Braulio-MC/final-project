@@ -12,7 +12,7 @@ export default class UserController {
     @inject(UserService) private readonly service: UserService
   ) {}
 
-  async create (req: Request, res: Response, next: NextFunction): Promise<void> {
+  create (req: Request, res: Response, next: NextFunction): void {
     const errors = validationResult(req).formatWith(expressErrorFormatter)
     if (errors.isEmpty()) {
       const { users } = req.body
