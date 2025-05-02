@@ -1,8 +1,8 @@
 import * as v2 from 'firebase-functions/v2'
-import { db } from '../core/FirebaseHelper'
 import { FieldPath, FieldValue } from 'firebase-admin/firestore'
 import { StatusCodes } from 'http-status-codes'
 import { FIRESTORE_COLLECTION_CATEGORY, FIRESTORE_COLLECTION_PRODUCT } from '../core/Constants'
+import { firebaseHelper } from '../di/Container'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {
@@ -22,8 +22,8 @@ export const update = v2.https.onRequest(async (request, response) => {
       return
     }
     const updatedAt = FieldValue.serverTimestamp()
-    const batch = db.batch()
-    const docRef = db.collection(collectionName).doc(id)
+    const batch = firebaseHelper.firestore.batch()
+    const docRef = firebaseHelper.firestore.collection(collectionName).doc(id)
     const updateObj = {
       name,
       parent: {
@@ -39,7 +39,7 @@ export const update = v2.https.onRequest(async (request, response) => {
       'category.parentName': parentName,
       updatedAt
     }
-    const productsQuerySnapshot = await db.collection(productsCollectionName)
+    const productsQuerySnapshot = await firebaseHelper.firestore.collection(productsCollectionName)
       .where(new FieldPath('category', 'id'), '==', id)
       .get()
     if (!productsQuerySnapshot.empty) {
@@ -68,12 +68,12 @@ export const remove = v2.https.onRequest(async (request, response) => {
       response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must not be empty' })
       return
     }
-    const productsQuerySnapshot = await db.collection(productsCollectionName)
+    const productsQuerySnapshot = await firebaseHelper.firestore.collection(productsCollectionName)
       .where(new FieldPath('category', 'id'), '==', id)
       .limit(1)
       .get()
     if (productsQuerySnapshot.empty) {
-      await db.collection(collectionName).doc(id).delete()
+      await firebaseHelper.firestore.collection(collectionName).doc(id).delete()
       response.status(StatusCodes.OK).send({ data: 'Category deleted' })
     } else {
       response.status(StatusCodes.UNPROCESSABLE_ENTITY).send({ data: 'Category cannot be deleted because it is still in use' })

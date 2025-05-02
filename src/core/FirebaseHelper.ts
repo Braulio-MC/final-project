@@ -1,19 +1,55 @@
-import { initializeApp, applicationDefault } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
-import { getStorage } from 'firebase-admin/storage'
-import { getMessaging } from 'firebase-admin/messaging'
-import { firebaseConfig } from './Configuration'
+import { initializeApp, applicationDefault, App } from 'firebase-admin/app'
+import { getFirestore, Firestore } from 'firebase-admin/firestore'
+import { getStorage, Storage } from 'firebase-admin/storage'
+import { getMessaging, Messaging } from 'firebase-admin/messaging'
+import { singleton } from 'tsyringe'
 
-const app = initializeApp({
-  credential: applicationDefault(),
-  storageBucket: firebaseConfig.bucketRef
-})
+@singleton()
+export class FirebaseHelper {
+  private _app: App | null = null
+  private _firestoreDb: Firestore | null = null
+  private _firebaseStorage: Storage | null = null
+  private _firebaseMessaging: Messaging | null = null
 
-export const db = getFirestore()
-db.settings({
-  ignoreUndefinedProperties: true
-})
+  private initializeApp (): App {
+    const bucketRef = process.env.FIREB_STORAGE_BUCKET
+    if (bucketRef == null) {
+      throw new Error('Firebase Storage bucket not configured in environment variables')
+    }
+    return initializeApp({
+      credential: applicationDefault(),
+      storageBucket: bucketRef
+    })
+  }
 
-export const firebaseStorage = getStorage(app)
+  private get app (): App {
+    if (this._app == null) {
+      this._app = this.initializeApp()
+    }
+    return this._app
+  }
 
-export const firebaseMessaging = getMessaging(app)
+  get firestore (): Firestore {
+    if (this._firestoreDb == null) {
+      this._firestoreDb = getFirestore(this.app)
+      this._firestoreDb.settings({
+        ignoreUndefinedProperties: true
+      })
+    }
+    return this._firestoreDb
+  }
+
+  get storage (): Storage {
+    if (this._firebaseStorage == null) {
+      this._firebaseStorage = getStorage(this.app)
+    }
+    return this._firebaseStorage
+  }
+
+  get messaging (): Messaging {
+    if (this._firebaseMessaging == null) {
+      this._firebaseMessaging = getMessaging(this.app)
+    }
+    return this._firebaseMessaging
+  }
+}

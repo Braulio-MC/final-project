@@ -1,7 +1,6 @@
 import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as v2 from 'firebase-functions/v2'
 import { StatusCodes } from 'http-status-codes'
-import { db, firebaseStorage } from '../core/FirebaseHelper'
 import ErrorResponse from '../core/ErrorResponse'
 import OrderStatuses from '../core/OrderStatuses'
 import {
@@ -12,6 +11,7 @@ import {
   FIRESTORE_SUBCOLLECTION_ORDER,
   FIRESTORE_SUBCOLLECTION_SHOPPING_CART
 } from '../core/Constants'
+import { firebaseHelper } from '../di/Container'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {
@@ -71,7 +71,7 @@ export const update = v2.https.onRequest(async (request, response) => {
         return
       }
     }
-    const batch = db.batch()
+    const batch = firebaseHelper.firestore.batch()
     const updatedAt = FieldValue.serverTimestamp()
     const updateObj: { [k: string]: any } = {
       name,
@@ -118,9 +118,9 @@ export const update = v2.https.onRequest(async (request, response) => {
       updateProductFavoritesObj.productImage = image
       updateShoppingCartProductsObj['product.image'] = image
     }
-    const productRef = db.collection(collectionName).doc(id)
+    const productRef = firebaseHelper.firestore.collection(collectionName).doc(id)
     batch.update(productRef, updateObj)
-    const productFavoritesQuerySnapshot = await db.collection(productFavoritesCollectionName)
+    const productFavoritesQuerySnapshot = await firebaseHelper.firestore.collection(productFavoritesCollectionName)
       .where('productId', '==', id)
       .get()
     if (!productFavoritesQuerySnapshot.empty) {
@@ -128,7 +128,7 @@ export const update = v2.https.onRequest(async (request, response) => {
         batch.update(productFavorite.ref, updateProductFavoritesObj)
       })
     }
-    const shoppingCartProductsQuerySnapshot = await db.collectionGroup(shoppingCartProductsCollectionName)
+    const shoppingCartProductsQuerySnapshot = await firebaseHelper.firestore.collectionGroup(shoppingCartProductsCollectionName)
       .where(new FieldPath('product', 'id'), '==', id)
       .get()
     if (!shoppingCartProductsQuerySnapshot.empty) {
@@ -159,7 +159,7 @@ export const remove = v2.https.onRequest(async (request, response) => {
     if (id === '') {
       throw new Error('id must not be empty')
     }
-    const ordersQuerySnapshot = await db.collection(orderCollectionName)
+    const ordersQuerySnapshot = await firebaseHelper.firestore.collection(orderCollectionName)
       .where('status', '!=', OrderStatuses.DELIVERED)
       .get()
     let isProductInNonDeliveredOrder = false
@@ -173,11 +173,11 @@ export const remove = v2.https.onRequest(async (request, response) => {
       }
     }
     if (!isProductInNonDeliveredOrder) {
-      const batch = db.batch()
-      const productRef = db.collection(collectionName).doc(id)
+      const batch = firebaseHelper.firestore.batch()
+      const productRef = firebaseHelper.firestore.collection(collectionName).doc(id)
       const productImageUrl = await (await productRef.get()).data()?.image
       batch.delete(productRef)
-      const productFavoritesQuerySnapshot = await db.collection(productFavoritesCollectionName)
+      const productFavoritesQuerySnapshot = await firebaseHelper.firestore.collection(productFavoritesCollectionName)
         .where('productId', '==', id)
         .get()
       if (!productFavoritesQuerySnapshot.empty) {
@@ -185,7 +185,7 @@ export const remove = v2.https.onRequest(async (request, response) => {
           batch.delete(productFavorite.ref)
         })
       }
-      const productReviewsQuerySnapshot = await db.collection(productReviewsCollectionName)
+      const productReviewsQuerySnapshot = await firebaseHelper.firestore.collection(productReviewsCollectionName)
         .where('productId', '==', id)
         .get()
       if (!productReviewsQuerySnapshot.empty) {
@@ -193,7 +193,7 @@ export const remove = v2.https.onRequest(async (request, response) => {
           batch.delete(productReview.ref)
         })
       }
-      const shoppingCartProductsQuerySnapshot = await db.collectionGroup(shoppingCartProductsCollectionName)
+      const shoppingCartProductsQuerySnapshot = await firebaseHelper.firestore.collectionGroup(shoppingCartProductsCollectionName)
         .where(new FieldPath('product', 'id'), '==', id)
         .get()
       if (!shoppingCartProductsQuerySnapshot.empty) {
@@ -206,7 +206,7 @@ export const remove = v2.https.onRequest(async (request, response) => {
           // Delete product image from storage
           const image = decodeURIComponent(productImageUrl.split('/o/')[1].split('?alt=media')[0])
           if (image !== '') {
-            const file = firebaseStorage.bucket().file(image)
+            const file = firebaseHelper.storage.bucket().file(image)
             const [exists] = await file.exists()
             if (exists) {
               await file.delete()

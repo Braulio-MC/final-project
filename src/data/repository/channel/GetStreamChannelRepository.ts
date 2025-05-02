@@ -1,20 +1,19 @@
 import { inject, singleton } from 'tsyringe'
 import IChannelRepository from './IChannelRepository'
-import { StreamChat } from 'stream-chat'
 import GetStreamMessagingChannelTypes from '../../../core/GetStreamMessagingChannelTypes'
-import { getStreamConfig } from '../../../core/Configuration'
+import { GetStreamHelper } from '../../../core/GetStreamHelper'
 
 @singleton()
 export default class GetStreamChannelRepository implements IChannelRepository {
-  private readonly _serverSideUserId = getStreamConfig.serverSideUserId as string
+  private readonly _serverSideUserId = process.env.GET_STREAM_SERVER_SIDE_USER_ID as string
 
   constructor (
-    @inject('GetStreamClient') private readonly client: StreamChat
+    @inject(GetStreamHelper) private readonly getStreamHelper: GetStreamHelper
   ) {}
 
   async create (type: GetStreamMessagingChannelTypes, id: string, options: { blocked?: boolean, name?: string, members?: string[] } = {}): Promise<string> {
     const filter = { type, id: { $eq: id } }
-    const channels = await this.client.queryChannels(filter)
+    const channels = await this.getStreamHelper.client.queryChannels(filter)
     if (channels.length > 0) {
       const channel = channels[0]
       if (channel.id !== undefined) {
@@ -22,7 +21,7 @@ export default class GetStreamChannelRepository implements IChannelRepository {
         return id
       }
     }
-    const channel = this.client.channel(type, id, {
+    const channel = this.getStreamHelper.client.channel(type, id, {
       blocked: options.blocked,
       name: options.name,
       members: options.members,
@@ -35,7 +34,7 @@ export default class GetStreamChannelRepository implements IChannelRepository {
 
   async createDistinct (type: GetStreamMessagingChannelTypes, members: string[]): Promise<string> {
     const filter = { type, members: { $eq: members }, created_by_id: { $eq: this._serverSideUserId } }
-    const channels = await this.client.queryChannels(filter)
+    const channels = await this.getStreamHelper.client.queryChannels(filter)
     if (channels.length > 0) {
       const channel = channels[0]
       if (channel.id !== undefined) {
@@ -43,7 +42,7 @@ export default class GetStreamChannelRepository implements IChannelRepository {
         return id
       }
     }
-    const channel = this.client.channel(type, {
+    const channel = this.getStreamHelper.client.channel(type, {
       members,
       created_by_id: this._serverSideUserId
     })

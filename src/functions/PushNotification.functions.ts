@@ -2,8 +2,8 @@ import * as v2 from 'firebase-functions/v2'
 import ErrorResponse from '../core/ErrorResponse'
 import { StatusCodes } from 'http-status-codes'
 import { FieldValue } from 'firebase-admin/firestore'
-import { db } from '../core/FirebaseHelper'
 import { FIRESTORE_COLLECTION_USER, FIRESTORE_SUBCOLLECTION_USER_TOKEN } from '../core/Constants'
+import { firebaseHelper } from '../di/Container'
 
 export const create = v2.https.onRequest((request, response) => {
   const collectionName = FIRESTORE_COLLECTION_USER
@@ -21,7 +21,7 @@ export const create = v2.https.onRequest((request, response) => {
     token,
     createdAt: FieldValue.serverTimestamp()
   }
-  db.collection(collectionName)
+  firebaseHelper.firestore.collection(collectionName)
     .doc(userId)
     .collection(subCollectionName)
     .add(newObj)
@@ -45,14 +45,14 @@ export const remove = v2.https.onRequest(async (request, response) => {
   if (userId === '' || token === '') {
     throw new ErrorResponse('userId and token must not be empty', StatusCodes.BAD_REQUEST)
   }
-  const userTokens = await db.collection(collectionName)
+  const userTokens = await firebaseHelper.firestore.collection(collectionName)
     .doc(userId)
     .collection(subCollectionName)
     .where('userId', '==', userId)
     .where('token', '==', token)
     .get()
   if (!userTokens.empty) {
-    const batch = db.batch()
+    const batch = firebaseHelper.firestore.batch()
     userTokens.docs.forEach(doc => {
       batch.delete(doc.ref)
     })

@@ -1,6 +1,6 @@
 import * as v2 from 'firebase-functions/v2'
-import { db } from '../core/FirebaseHelper'
 import { FIRESTORE_COLLECTION_STORE } from '../core/Constants'
+import { firebaseHelper } from '../di/Container'
 
 export const onStoreReviewWrite = v2.firestore
   .onDocumentWritten('store-reviews/{reviewId}', async (event) => {
@@ -12,26 +12,26 @@ export const onStoreReviewWrite = v2.firestore
     const storeId = after?.storeId ?? before?.storeId
     if (storeId == null) return
 
-    const storeRef = db.collection(FIRESTORE_COLLECTION_STORE).doc(storeId)
+    const storeRef = firebaseHelper.firestore.collection(FIRESTORE_COLLECTION_STORE).doc(storeId)
 
-    await db.runTransaction(async (transaction) => {
+    await firebaseHelper.firestore.runTransaction(async (transaction) => {
       const storeDoc = await transaction.get(storeRef)
       if (!storeDoc.exists) return
       let totalRating = storeDoc.data()?.totalRating as number ?? 0
       let totalReviews = storeDoc.data()?.totalReviews as number ?? 0
       if ((before != null) && (after != null)) {
-        // Review updated
+      // Review updated
         const afterRating = after.rating as number
         const beforeRating = before.rating as number
         totalRating -= beforeRating
         totalRating += afterRating
       } else if (after != null) {
-        // Review created
+      // Review created
         const afterRating = after.rating as number
         totalRating += afterRating
         totalReviews++
       } else if (before != null) {
-        // Review deleted
+      // Review deleted
         const beforeRating = before.rating as number
         totalRating -= beforeRating
         totalReviews--

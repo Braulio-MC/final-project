@@ -1,8 +1,8 @@
 import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as v2 from 'firebase-functions/v2'
 import { StatusCodes } from 'http-status-codes'
-import { db } from '../core/FirebaseHelper'
 import { FIRESTORE_COLLECTION_DISCOUNT, FIRESTORE_COLLECTION_PRODUCT } from '../core/Constants'
+import { firebaseHelper } from '../di/Container'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {
@@ -45,8 +45,8 @@ export const update = v2.https.onRequest(async (request, response) => {
       return
     }
     const updatedAt = FieldValue.serverTimestamp()
-    const batch = db.batch()
-    const docRef = db.collection(collectionName).doc(id)
+    const batch = firebaseHelper.firestore.batch()
+    const docRef = firebaseHelper.firestore.collection(collectionName).doc(id)
     const updateObj = {
       name,
       percentage,
@@ -62,7 +62,7 @@ export const update = v2.https.onRequest(async (request, response) => {
       'discount.endDate': endDateTimestamp,
       updatedAt
     }
-    const productsQuerySnapshot = await db.collection(productsCollectionName)
+    const productsQuerySnapshot = await firebaseHelper.firestore.collection(productsCollectionName)
       .where(new FieldPath('discount', 'id'), '==', id)
       .get()
     if (!productsQuerySnapshot.empty) {
@@ -91,8 +91,8 @@ export const remove = v2.https.onRequest(async (request, response) => {
       response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must not be empty' })
       return
     }
-    const batch = db.batch()
-    const docRef = db.collection(collectionName).doc(id)
+    const batch = firebaseHelper.firestore.batch()
+    const docRef = firebaseHelper.firestore.collection(collectionName).doc(id)
     batch.delete(docRef)
     const updateProductsDiscountObj = {
       'discount.percentage': 0,
@@ -100,7 +100,7 @@ export const remove = v2.https.onRequest(async (request, response) => {
       'discount.endDate': Timestamp.fromDate(new Date(1970, 0)),
       updatedAt: FieldValue.serverTimestamp()
     }
-    const productsQuerySnapshot = await db.collection(productsCollectionName)
+    const productsQuerySnapshot = await firebaseHelper.firestore.collection(productsCollectionName)
       .where(new FieldPath('discount', 'id'), '==', id)
       .get()
     if (!productsQuerySnapshot.empty) {

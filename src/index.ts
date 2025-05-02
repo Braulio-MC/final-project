@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { onRequest } from 'firebase-functions/v2/https'
 import { recursiveCollectionDelete as rcdFunc } from './functions/RecursiveCollectionDelete'
 import { uploadImage as uplIFunc } from './functions/UploadImage'
@@ -21,4 +22,9 @@ export const pushNotification = pushNotificationFuncs
 export const messaging = messagingFuncs
 export const storeReviewTriggers = storeReviewTriggersFuncs
 export const productReviewTriggers = productReviewTriggersFuncs
-export const api = onRequest(app)
+export const api = onRequest(
+  {
+    secrets: ['ALGOLIA_SEARCH_API_KEY', 'GET_STREAM_API_KEY', 'GET_STREAM_API_SECRET']
+  },
+  app
+)

@@ -6,14 +6,13 @@ import { StatusCodes } from 'http-status-codes'
 import { expressErrorFormatter } from '../core/Utils'
 import ErrorResponse from '../core/ErrorResponse'
 import AlgoliaSecuredSearchKeyScopeConfigMap from '../core/AlgoliaSecuredSearchKeyScopeConfigMap'
-import { Algoliasearch } from 'algoliasearch'
-import { algoliaConfig } from '../core/Configuration'
+import { AlgoliaHelper } from '../core/AlgoliaHelper'
 
 @singleton()
 export default class TokenController {
   constructor (
     @inject(TokenService) private readonly service: TokenService,
-    @inject('AlgoliaClient') private readonly algoliaClient: Algoliasearch
+    @inject(AlgoliaHelper) private readonly algoliaHelper: AlgoliaHelper
   ) {}
 
   create (req: Request, res: Response, next: NextFunction): void {
@@ -29,7 +28,7 @@ export default class TokenController {
     }
   }
 
-  getAlgoliaSecuredSearchApiKey (req: Request, res: Response): void {
+  getAlgoliaSecuredSearchApiKey (req: Request, res: Response, _next: NextFunction): void {
     const userId = req.auth?.payload?.sub
     const { scopeType } = req.body
     const scopeConfig = AlgoliaSecuredSearchKeyScopeConfigMap[scopeType]
@@ -58,8 +57,8 @@ export default class TokenController {
       restrictions.restrictIndices = scopeConfig.restrictIndices
     }
     try {
-      const userScopedSecApiKey = this.algoliaClient.generateSecuredApiKey({
-        parentApiKey: algoliaConfig.apiKey as string,
+      const userScopedSecApiKey = this.algoliaHelper.client.generateSecuredApiKey({
+        parentApiKey: process.env.ALGOLIA_SEARCH_API_KEY as string,
         restrictions
       })
       res.status(200).json(userScopedSecApiKey)

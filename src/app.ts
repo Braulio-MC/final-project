@@ -1,4 +1,3 @@
-import 'reflect-metadata'
 import express from 'express'
 import helmet from 'helmet'
 import userRoutes from './routes/User.routes'

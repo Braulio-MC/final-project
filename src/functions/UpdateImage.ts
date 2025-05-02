@@ -1,7 +1,7 @@
 import * as v2 from 'firebase-functions/v2'
 import crypto from 'crypto'
 import { StatusCodes } from 'http-status-codes'
-import { firebaseStorage } from '../core/FirebaseHelper'
+import { firebaseHelper } from '../di/Container'
 
 export const updateImage = v2.https.onRequest(async (request, response) => {
   try {
@@ -21,7 +21,7 @@ export const updateImage = v2.https.onRequest(async (request, response) => {
       return
     }
     const oldImagePath = decodeURIComponent(match[1])
-    const bucket = firebaseStorage.bucket()
+    const bucket = firebaseHelper.storage.bucket()
     // Save new image in storage
     const finalPath = `${newPath as string}/${newFileName as string}`
     const imageBuf = Buffer.from(newImageBase64, 'base64')

@@ -1,6 +1,6 @@
 import * as v2 from 'firebase-functions/v2'
 import { StatusCodes } from 'http-status-codes'
-import { db } from '../core/FirebaseHelper'
+import { firebaseHelper } from '../di/Container'
 
 export const recursiveCollectionDelete = v2.https.onRequest((request, response) => {
   const collectionName = request.body.data.collectionName
@@ -13,8 +13,8 @@ export const recursiveCollectionDelete = v2.https.onRequest((request, response) 
     response.status(StatusCodes.BAD_REQUEST).send({ data: 'Collection name and document id must not be empty' })
     return
   }
-  const ref = db.collection(collectionName).doc(documentId)
-  db.recursiveDelete(ref)
+  const ref = firebaseHelper.firestore.collection(collectionName).doc(documentId)
+  firebaseHelper.firestore.recursiveDelete(ref)
     .then(_ => {
       response.status(StatusCodes.OK).send({ data: 'Collection deleted' })
     })

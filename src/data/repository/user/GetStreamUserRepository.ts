@@ -1,16 +1,16 @@
 import { inject, singleton } from 'tsyringe'
 import IUserRepository from './IUserRepository'
-import { StreamChat } from 'stream-chat'
 import { GetStreamUser } from '../../../types'
+import { GetStreamHelper } from '../../../core/GetStreamHelper'
 
 @singleton()
 export default class GetStreamUserRepository implements IUserRepository {
   constructor (
-    @inject('GetStreamClient') private readonly getStreamClient: StreamChat
+    @inject(GetStreamHelper) private readonly getStreamHelper: GetStreamHelper
   ) {}
 
   async create (users: GetStreamUser[]): Promise<void> {
-    await this.getStreamClient.upsertUsers(users.map(user => {
+    await this.getStreamHelper.client.upsertUsers(users.map(user => {
       return {
         id: user.id,
         name: user.name,

@@ -1,7 +1,7 @@
 import * as v2 from 'firebase-functions/v2'
 import crypto from 'crypto'
 import { StatusCodes } from 'http-status-codes'
-import { firebaseStorage } from '../core/FirebaseHelper'
+import { firebaseHelper } from '../di/Container'
 
 export const uploadImage = v2.https.onRequest(async (request, response) => {
   try {
@@ -15,7 +15,7 @@ export const uploadImage = v2.https.onRequest(async (request, response) => {
     }
     const finalPath = `${path as string}/${fileName as string}`
     const imageBuf = Buffer.from(imageBase64, 'base64')
-    const bucket = firebaseStorage.bucket()
+    const bucket = firebaseHelper.storage.bucket()
     const file = bucket.file(finalPath)
     const [exists] = await file.exists()
     if (exists) {

@@ -1,26 +1,14 @@
 import { container } from 'tsyringe'
-import { algoliaClient } from '../core/AlgoliaHelper'
-import { getStreamClient } from '../core/GetStreamHelper'
-import GetStreamTokenProvider from '../data/provider/token/GetStreamTokenProvider'
-import TokenController from '../controllers/Token.controller'
+import { AlgoliaHelper } from '../core/AlgoliaHelper'
+import { FirebaseHelper } from '../core/FirebaseHelper'
+import { GetStreamHelper } from '../core/GetStreamHelper'
 import ChannelController from '../controllers/Channel.controller'
+import TokenController from '../controllers/Token.controller'
 import UserController from '../controllers/User.controller'
 
-container.register(
-  'AlgoliaClient',
-  { useValue: algoliaClient }
-)
-
-container.register(
-  'GetStreamClient',
-  { useValue: getStreamClient }
-)
-
-container.register(
-  'TokenProvider',
-  { useClass: GetStreamTokenProvider }
-)
-
-export const tokenController = container.resolve(TokenController)
+export const algoliaHelper = container.resolve(AlgoliaHelper)
+export const firebaseHelper = container.resolve(FirebaseHelper)
+export const getStreamHelper = container.resolve(GetStreamHelper)
 export const channelController = container.resolve(ChannelController)
+export const tokenController = container.resolve(TokenController)
 export const userController = container.resolve(UserController)
