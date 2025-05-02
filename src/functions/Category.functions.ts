@@ -1,13 +1,13 @@
 import * as v2 from 'firebase-functions/v2'
 import { db } from '../core/FirebaseHelper'
-import { firestoreConfig } from '../core/Configuration'
 import { FieldPath, FieldValue } from 'firebase-admin/firestore'
 import { StatusCodes } from 'http-status-codes'
+import { FIRESTORE_COLLECTION_CATEGORY, FIRESTORE_COLLECTION_PRODUCT } from '../core/Constants'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {
-    const collectionName = firestoreConfig.category as string
-    const productsCollectionName = firestoreConfig.product as string
+    const collectionName = FIRESTORE_COLLECTION_CATEGORY
+    const productsCollectionName = FIRESTORE_COLLECTION_PRODUCT
     const id = request.body.data.id
     const name = request.body.data.name
     const parentId = request.body.data.parentId
@@ -57,8 +57,8 @@ export const update = v2.https.onRequest(async (request, response) => {
 
 export const remove = v2.https.onRequest(async (request, response) => {
   try {
-    const collectionName = firestoreConfig.category as string
-    const productsCollectionName = firestoreConfig.product as string
+    const collectionName = FIRESTORE_COLLECTION_CATEGORY
+    const productsCollectionName = FIRESTORE_COLLECTION_PRODUCT
     const id = request.body.data.id
     if (typeof id !== 'string') {
       response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must be a string' })

@@ -2,15 +2,22 @@ import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as v2 from 'firebase-functions/v2'
 import { StatusCodes } from 'http-status-codes'
 import { db, firebaseStorage } from '../core/FirebaseHelper'
-import { firestoreConfig } from '../core/Configuration'
 import ErrorResponse from '../core/ErrorResponse'
 import OrderStatuses from '../core/OrderStatuses'
+import {
+  FIRESTORE_COLLECTION_ORDER,
+  FIRESTORE_COLLECTION_PRODUCT,
+  FIRESTORE_COLLECTION_PRODUCT_FAVORITE,
+  FIRESTORE_COLLECTION_PRODUCT_REVIEW,
+  FIRESTORE_SUBCOLLECTION_ORDER,
+  FIRESTORE_SUBCOLLECTION_SHOPPING_CART
+} from '../core/Constants'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {
-    const collectionName = firestoreConfig.product as string
-    const productFavoritesCollectionName = firestoreConfig.productFavorite as string
-    const shoppingCartProductsCollectionName = firestoreConfig.shoppingCartProducts as string
+    const collectionName = FIRESTORE_COLLECTION_PRODUCT
+    const productFavoritesCollectionName = FIRESTORE_COLLECTION_PRODUCT_FAVORITE
+    const shoppingCartProductsCollectionName = FIRESTORE_SUBCOLLECTION_SHOPPING_CART
     const id = request.body.data.id
     const name = request.body.data.name
     const description = request.body.data.description
@@ -139,12 +146,12 @@ export const update = v2.https.onRequest(async (request, response) => {
 
 export const remove = v2.https.onRequest(async (request, response) => {
   try {
-    const collectionName = firestoreConfig.product as string
-    const orderCollectionName = firestoreConfig.order as string
-    const orderLinesCollectionName = firestoreConfig.orderLines as string
-    const productFavoritesCollectionName = firestoreConfig.productFavorite as string
-    const productReviewsCollectionName = firestoreConfig.productReview as string
-    const shoppingCartProductsCollectionName = firestoreConfig.shoppingCartProducts as string
+    const collectionName = FIRESTORE_COLLECTION_PRODUCT
+    const orderCollectionName = FIRESTORE_COLLECTION_ORDER
+    const orderLinesCollectionName = FIRESTORE_SUBCOLLECTION_ORDER
+    const productFavoritesCollectionName = FIRESTORE_COLLECTION_PRODUCT_FAVORITE
+    const productReviewsCollectionName = FIRESTORE_COLLECTION_PRODUCT_REVIEW
+    const shoppingCartProductsCollectionName = FIRESTORE_SUBCOLLECTION_SHOPPING_CART
     const id = request.body.data.id
     if (typeof id !== 'string') {
       throw new Error('id must be a string')

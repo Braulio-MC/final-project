@@ -3,11 +3,11 @@ import ErrorResponse from '../core/ErrorResponse'
 import { StatusCodes } from 'http-status-codes'
 import { FieldValue } from 'firebase-admin/firestore'
 import { db } from '../core/FirebaseHelper'
-import { firestoreConfig } from '../core/Configuration'
+import { FIRESTORE_COLLECTION_USER, FIRESTORE_SUBCOLLECTION_USER_TOKEN } from '../core/Constants'
 
 export const create = v2.https.onRequest((request, response) => {
-  const collectionName = firestoreConfig.user as string
-  const subCollectionName = firestoreConfig.userToken as string
+  const collectionName = FIRESTORE_COLLECTION_USER
+  const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
   const userId = request.body.data.userId
   const token = request.body.data.token
   if (typeof userId !== 'string' || typeof token !== 'string') {
@@ -35,8 +35,8 @@ export const create = v2.https.onRequest((request, response) => {
 })
 
 export const remove = v2.https.onRequest(async (request, response) => {
-  const collectionName = firestoreConfig.user as string
-  const subCollectionName = firestoreConfig.userToken as string
+  const collectionName = FIRESTORE_COLLECTION_USER
+  const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
   const userId = request.body.data.userId
   const token = request.body.data.token
   if (typeof userId !== 'string' || typeof token !== 'string') {

@@ -19,7 +19,6 @@ const errorHandler = (err: Errback, _req: Request, res: Response, next: NextFunc
   } else if (err instanceof ErrorResponse) {
     res.status(err.statusCode).json(err.reason)
   } else {
-    console.error(err) //! development only
     const message = 'Internal server error'
     const statusCode = StatusCodes.INTERNAL_SERVER_ERROR
     res.status(statusCode).json(ErrorResponse.makeErrorResponse(message, statusCode))

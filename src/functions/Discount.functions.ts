@@ -2,12 +2,12 @@ import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as v2 from 'firebase-functions/v2'
 import { StatusCodes } from 'http-status-codes'
 import { db } from '../core/FirebaseHelper'
-import { firestoreConfig } from '../core/Configuration'
+import { FIRESTORE_COLLECTION_DISCOUNT, FIRESTORE_COLLECTION_PRODUCT } from '../core/Constants'
 
 export const update = v2.https.onRequest(async (request, response) => {
   try {
-    const collectionName = firestoreConfig.discount as string
-    const productsCollectionName = firestoreConfig.product as string
+    const collectionName = FIRESTORE_COLLECTION_DISCOUNT
+    const productsCollectionName = FIRESTORE_COLLECTION_PRODUCT
     const id = request.body.data.id
     const name = request.body.data.name
     const percentage = request.body.data.percentage
@@ -80,8 +80,8 @@ export const update = v2.https.onRequest(async (request, response) => {
 
 export const remove = v2.https.onRequest(async (request, response) => {
   try {
-    const collectionName = firestoreConfig.discount as string
-    const productsCollectionName = firestoreConfig.product as string
+    const collectionName = FIRESTORE_COLLECTION_DISCOUNT
+    const productsCollectionName = FIRESTORE_COLLECTION_PRODUCT
     const id = request.body.data.id
     if (typeof id !== 'string') {
       response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must be a string' })

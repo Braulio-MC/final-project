@@ -1,12 +1,12 @@
 import * as v2 from 'firebase-functions/v2'
 import { db, firebaseMessaging } from '../core/FirebaseHelper'
-import { firestoreConfig } from '../core/Configuration'
 import { StatusCodes } from 'http-status-codes'
 import ErrorResponse from '../core/ErrorResponse'
+import { FIRESTORE_COLLECTION_USER, FIRESTORE_SUBCOLLECTION_USER_TOKEN } from '../core/Constants'
 
 export const createTopic = v2.https.onRequest(async (request, response) => {
-  const collectionName = firestoreConfig.user as string
-  const subCollectionName = firestoreConfig.userToken as string
+  const collectionName = FIRESTORE_COLLECTION_USER
+  const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
   const topic = request.body.data.topic
   const userId = request.body.data.userId
   const storeId = request.body.data.storeId
@@ -73,8 +73,8 @@ export const sendMessageToUserDevices = v2.https.onRequest(async (request, respo
     throw new Error('Invalid parameters: message must contain a notification object')
   }
   // Retrive the tokens for the user id from firestore
-  const collectionName = firestoreConfig.user as string
-  const subCollectionName = firestoreConfig.userToken as string
+  const collectionName = FIRESTORE_COLLECTION_USER
+  const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
   const userTokens = await db.collection(collectionName)
     .doc(userId)
     .collection(subCollectionName)

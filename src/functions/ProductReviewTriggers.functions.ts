@@ -1,5 +1,6 @@
 import * as v2 from 'firebase-functions/v2'
 import { db } from '../core/FirebaseHelper'
+import { FIRESTORE_COLLECTION_PRODUCT } from '../core/Constants'
 
 export const onProductReviewWrite = v2.firestore
   .onDocumentWritten('product-reviews/{reviewId}', async (event) => {
@@ -11,7 +12,7 @@ export const onProductReviewWrite = v2.firestore
     const productId = after?.productId ?? before?.productId
     if (productId == null) return
 
-    const productRef = db.collection('products').doc(productId)
+    const productRef = db.collection(FIRESTORE_COLLECTION_PRODUCT).doc(productId)
 
     await db.runTransaction(async (transaction) => {
       const productDoc = await transaction.get(productRef)

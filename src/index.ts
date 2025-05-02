@@ -1,4 +1,4 @@
-import * as v2 from 'firebase-functions/v2'
+import { onRequest } from 'firebase-functions/v2/https'
 import { recursiveCollectionDelete as rcdFunc } from './functions/RecursiveCollectionDelete'
 import { uploadImage as uplIFunc } from './functions/UploadImage'
 import { updateImage as updIFunc } from './functions/UpdateImage'
@@ -21,4 +21,4 @@ export const pushNotification = pushNotificationFuncs
 export const messaging = messagingFuncs
 export const storeReviewTriggers = storeReviewTriggersFuncs
 export const productReviewTriggers = productReviewTriggersFuncs
-export const api = v2.https.onRequest(app)
+export const api = onRequest(app)
