@@ -1,9 +1,10 @@
 {
   "name": "api",
   "version": "2.0.2",
-  "main": "build/index.js",
+  "main": "build/src/index.js",
   "scripts": {
-    "start": "node build/index.js",
+    "start": "node build/src/index.js",
+    "clean": "rimraf build",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "dev": "nodemon --exec node --loader ts-node/esm src/index.ts",
@@ -52,6 +53,6 @@
     ]
   },
   "engines": {
-    "node": "18"
+    "node": "22"
   }
 }

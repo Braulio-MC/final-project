@@ -1,117 +1,222 @@
-import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
-import * as v2 from 'firebase-functions/v2'
-import { StatusCodes } from 'http-status-codes'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { FIRESTORE_COLLECTION_DISCOUNT, FIRESTORE_COLLECTION_PRODUCT } from '../core/Constants'
 import { firebaseHelper } from '../di/Container'
 
-export const update = v2.https.onRequest(async (request, response) => {
+export const update = onCall(async (request, _response) => {
   try {
     const collectionName = FIRESTORE_COLLECTION_DISCOUNT
     const productsCollectionName = FIRESTORE_COLLECTION_PRODUCT
-    const id = request.body.data.id
-    const name = request.body.data.name
-    const percentage = request.body.data.percentage
-    const startDate = request.body.data.startDate
-    const endDate = request.body.data.endDate
-    const storeId = request.body.data.storeId
+    const { id, name, percentage, startDate, endDate, storeId } = request.data
+
     if (typeof id !== 'string' || typeof name !== 'string' || typeof storeId !== 'string') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name and storeId must be strings' })
-      return
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input types',
+        'id, name and storeId must be strings'
+      )
     }
+
     if (id === '' || name === '' || storeId === '') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name and storeId must not be empty' })
-      return
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input values',
+        'id, name and storeId must not be empty'
+      )
     }
-    if (typeof percentage !== 'number') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'percentage must be a number' })
-      return
+
+    if (typeof percentage !== 'number' || typeof startDate !== 'number' || typeof endDate !== 'number') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input type',
+        'percentage, startDate and endDate must be numbers'
+      )
     }
+
     if (percentage < 1 || percentage > 100) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'percentage must be between 1 and 100' })
-      return
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input value',
+        'percentage must be between 1 and 100'
+      )
     }
-    if (isNaN(startDate.value) || isNaN(endDate.value)) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'startDate and endDate must be numbers' })
-      return
-    }
-    const startDateTimestamp = Timestamp.fromMillis(+startDate.value)
-    const endDateTimestamp = Timestamp.fromMillis(+endDate.value)
+
+    const startDateTimestamp = Timestamp.fromMillis(startDate)
+    const endDateTimestamp = Timestamp.fromMillis(endDate)
     if (startDateTimestamp.toMillis() < Timestamp.now().toMillis()) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'startDate must be in the future' })
-      return
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input value',
+        'startDate must be in the future'
+      )
     }
+
     if (startDateTimestamp.toMillis() >= endDateTimestamp.toMillis()) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'startDate must be before endDate' })
-      return
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input value',
+        'startDate must be before endDate'
+      )
     }
+
+    const productsRef = firebaseHelper.firestore.collection(productsCollectionName)
     const updatedAt = FieldValue.serverTimestamp()
-    const batch = firebaseHelper.firestore.batch()
-    const docRef = firebaseHelper.firestore.collection(collectionName).doc(id)
-    const updateObj = {
-      name,
-      percentage,
-      startDate: startDateTimestamp,
-      endDate: endDateTimestamp,
-      storeId,
-      updatedAt
-    }
-    batch.update(docRef, updateObj)
-    const updateRelatedProductsObj = {
+    const updateProductDiscount = {
       'discount.percentage': percentage,
       'discount.startDate': startDateTimestamp,
-      'discount.endDate': endDateTimestamp,
-      updatedAt
+      'discount.endDate': endDateTimestamp
     }
-    const productsQuerySnapshot = await firebaseHelper.firestore.collection(productsCollectionName)
-      .where(new FieldPath('discount', 'id'), '==', id)
-      .get()
-    if (!productsQuerySnapshot.empty) {
-      productsQuerySnapshot.forEach(product => {
-        batch.update(product.ref, updateRelatedProductsObj)
+    const batchLimit = 300
+    let batch = firebaseHelper.firestore.batch()
+    let needUpdate = false
+    let processedCount = 0
+    let query = productsRef
+      .where('discount.id', '==', id)
+      .limit(batchLimit)
+
+    await firebaseHelper.firestore.collection(collectionName).doc(id)
+      .update({
+        name,
+        percentage,
+        startDate: startDateTimestamp,
+        endDate: endDateTimestamp,
+        storeId,
+        updatedAt
       })
+
+    while (true) {
+      const productsSnapshot = await query.get()
+
+      if (productsSnapshot.empty) break
+
+      productsSnapshot.docs.forEach(doc => {
+        const productDiscount = doc.data().discount ?? {}
+        if (productDiscount.id === id) {
+          batch.update(doc.ref, {
+            ...updateProductDiscount,
+            updatedAt
+          })
+          processedCount++
+          needUpdate = true
+        }
+      })
+
+      if (needUpdate) {
+        await batch.commit()
+        batch = firebaseHelper.firestore.batch()
+        needUpdate = false
+      }
+
+      if (productsSnapshot.docs.length < batchLimit) break
+      const lastDoc = productsSnapshot.docs[productsSnapshot.docs.length - 1]
+      query = productsRef
+        .where('discount.id', '==', id)
+        .startAfter(lastDoc)
+        .limit(batchLimit)
     }
-    await batch.commit()
-    response.status(StatusCodes.OK).send({ data: 'Discount updated' })
+
+    if (needUpdate) {
+      await batch.commit()
+    }
+
+    return {
+      message: 'Discount updated successfully',
+      data: {
+        updatedId: id,
+        affectedProducts: processedCount
+      }
+    }
   } catch (e) {
-    console.error('An error occurred when update (discount) was called', e)
-    response.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ data: 'Error updating discount' })
+    if (e instanceof HttpsError) throw e
+    throw new HttpsError(
+      'internal',
+      'Error updating discount',
+      'An internal error occurred while updating the discount'
+    )
   }
 })
 
-export const remove = v2.https.onRequest(async (request, response) => {
+export const remove = onCall(async (request, _response) => {
   try {
     const collectionName = FIRESTORE_COLLECTION_DISCOUNT
     const productsCollectionName = FIRESTORE_COLLECTION_PRODUCT
-    const id = request.body.data.id
-    if (typeof id !== 'string') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must be a string' })
-      return
+    const { id } = request.data
+
+    if (typeof id !== 'string' || id === '') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input type or empty value',
+        'id must be a string and not empty'
+      )
     }
-    if (id === '') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id must not be empty' })
-      return
-    }
-    const batch = firebaseHelper.firestore.batch()
-    const docRef = firebaseHelper.firestore.collection(collectionName).doc(id)
-    batch.delete(docRef)
-    const updateProductsDiscountObj = {
+
+    const productsRef = firebaseHelper.firestore.collection(productsCollectionName)
+    const updatedAt = FieldValue.serverTimestamp()
+    const defaultDiscountDate = Timestamp.fromDate(new Date(2000, 0, 1))
+    const updateProductDiscount = {
+      'discount.id': 'default',
       'discount.percentage': 0,
-      'discount.startDate': Timestamp.fromDate(new Date(1970, 0)),
-      'discount.endDate': Timestamp.fromDate(new Date(1970, 0)),
-      updatedAt: FieldValue.serverTimestamp()
+      'discount.startDate': defaultDiscountDate,
+      'discount.endDate': defaultDiscountDate
     }
-    const productsQuerySnapshot = await firebaseHelper.firestore.collection(productsCollectionName)
-      .where(new FieldPath('discount', 'id'), '==', id)
-      .get()
-    if (!productsQuerySnapshot.empty) {
-      productsQuerySnapshot.forEach(product => {
-        batch.update(product.ref, updateProductsDiscountObj)
+    const batchLimit = 300
+    let batch = firebaseHelper.firestore.batch()
+    let needUpdate = false
+    let processedCount = 0
+    let query = productsRef
+      .where('discount.id', '==', id)
+      .limit(batchLimit)
+
+    await firebaseHelper.firestore.collection(collectionName).doc(id).delete()
+
+    while (true) {
+      const productsSnapshot = await query.get()
+
+      if (productsSnapshot.empty) break
+
+      productsSnapshot.docs.forEach(doc => {
+        const productDiscount = doc.data().discount ?? {}
+        if (productDiscount.id === id) {
+          batch.update(doc.ref, {
+            ...updateProductDiscount,
+            updatedAt
+          })
+          processedCount++
+          needUpdate = true
+        }
       })
+
+      if (needUpdate) {
+        await batch.commit()
+        batch = firebaseHelper.firestore.batch()
+        needUpdate = false
+      }
+
+      if (productsSnapshot.docs.length < batchLimit) break
+      const lastDoc = productsSnapshot.docs[productsSnapshot.docs.length - 1]
+      query = productsRef
+        .where('discount.id', '==', id)
+        .startAfter(lastDoc)
+        .limit(batchLimit)
     }
-    await batch.commit()
-    response.status(StatusCodes.OK).send({ data: 'Discount removed' })
+
+    if (needUpdate) {
+      await batch.commit()
+    }
+
+    return {
+      message: 'Discount removed successfully',
+      data: {
+        removedId: id,
+        affectedProducts: processedCount
+      }
+    }
   } catch (e) {
-    console.error('An error occurred when remove (discount) was called', e)
-    response.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ data: 'Error removing discount' })
+    if (e instanceof HttpsError) throw e
+    throw new HttpsError(
+      'internal',
+      'Error removing discount',
+      'An internal error occurred while removing the discount'
+    )
   }
 })

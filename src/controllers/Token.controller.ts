@@ -33,20 +33,27 @@ export default class TokenController {
     const { scopeType } = req.body
     const scopeConfig = AlgoliaSecuredSearchKeyScopeConfigMap[scopeType]
     let filterValue: string
+
     if (userId === undefined || userId === '') {
-      res.status(400).json('User ID is required')
+      res.status(StatusCodes.BAD_REQUEST).json('User ID is required')
     }
+
     if (scopeConfig === undefined) {
-      res.status(400).json('Invalid scope type')
+      res.status(StatusCodes.BAD_REQUEST).json('Invalid scope type')
     }
+
     switch (scopeConfig.valueSource) {
       case 'userId':
         filterValue = userId as string
         break
     }
+
     if (filterValue === undefined || filterValue === '') {
-      res.status(400).json({ error: `Missing value for ${scopeConfig.valueSource}` })
+      res.status(StatusCodes.BAD_REQUEST).json({
+        error: `Missing value for ${scopeConfig.valueSource}`
+      })
     }
+
     const filters = `${scopeConfig.filterField}:${filterValue}`
     const restrictions: any = {
       filters,
@@ -61,9 +68,11 @@ export default class TokenController {
         parentApiKey: process.env.ALGOLIA_SEARCH_API_KEY as string,
         restrictions
       })
-      res.status(200).json(userScopedSecApiKey)
+      res.status(StatusCodes.OK).json(userScopedSecApiKey)
     } catch (error) {
-      res.status(500).json({ error: 'Failed to generate secured API key', details: error })
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        error: 'Failed to generate secured API key', details: error
+      })
     }
   }
 }

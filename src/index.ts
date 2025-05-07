@@ -10,6 +10,7 @@ import * as pushNotificationFuncs from './functions/PushNotification.functions'
 import * as messagingFuncs from './functions/Messaging.functions'
 import * as storeReviewTriggersFuncs from './functions/StoreReviewTriggers.functions'
 import * as productReviewTriggersFuncs from './functions/ProductReviewTriggers.functions'
+import * as shoppingCartTriggersFuncs from './functions/ShoppingCartTriggers.functions'
 import app from './app'
 
 export const recursiveCollectionDelete = rcdFunc
@@ -22,6 +23,7 @@ export const pushNotification = pushNotificationFuncs
 export const messaging = messagingFuncs
 export const storeReviewTriggers = storeReviewTriggersFuncs
 export const productReviewTriggers = productReviewTriggersFuncs
+export const shoppingCartTriggers = shoppingCartTriggersFuncs
 export const api = onRequest(
   {
     secrets: ['ALGOLIA_SEARCH_API_KEY', 'GET_STREAM_API_KEY', 'GET_STREAM_API_SECRET']

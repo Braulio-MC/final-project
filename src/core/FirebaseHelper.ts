@@ -1,7 +1,8 @@
-import { initializeApp, applicationDefault, App } from 'firebase-admin/app'
+import { initializeApp, App, cert, ServiceAccount } from 'firebase-admin/app'
 import { getFirestore, Firestore } from 'firebase-admin/firestore'
 import { getStorage, Storage } from 'firebase-admin/storage'
 import { getMessaging, Messaging } from 'firebase-admin/messaging'
+import serviceAccount from '../../firebase.json'
 import { singleton } from 'tsyringe'
 
 @singleton()
@@ -17,7 +18,7 @@ export class FirebaseHelper {
       throw new Error('Firebase Storage bucket not configured in environment variables')
     }
     return initializeApp({
-      credential: applicationDefault(),
+      credential: cert(serviceAccount as ServiceAccount),
       storageBucket: bucketRef
     })
   }

@@ -1,25 +1,30 @@
-import * as v2 from 'firebase-functions/v2'
+import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import crypto from 'crypto'
-import { StatusCodes } from 'http-status-codes'
 import { firebaseHelper } from '../di/Container'
 
-export const updateImage = v2.https.onRequest(async (request, response) => {
+export const updateImage = onCall(async (request, _response) => {
   try {
-    const oldPath = request.body.data.oldPath
-    const newPath = request.body.data.newPath
-    const newImageBase64 = request.body.data.newImageBase64
-    const newFileName = request.body.data.newFileName
-    const newFileType = request.body.data.newFileType
+    const { oldPath, newPath, newImageBase64, newFileName, newFileType } = request.data
+
     if ([oldPath, newPath, newImageBase64, newFileName, newFileType].some(v => typeof v !== 'string' || v.trim() === '')) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'Invalid input: All fields must be non-empty strings' })
-      return
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid argument types or empty values',
+        'oldPath, newPath, newImageBase64, newFileName, newFileType must be non-empty strings'
+      )
     }
+
     const firebaseStorageUrlPattern = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[^/]+\/o\/(.+?)(\?.*)?$/
     const match = (oldPath as string).match(firebaseStorageUrlPattern)
+
     if (match === null) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'Invalid oldPath format' })
-      return
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid oldPath format',
+        'oldPath must be a valid Firebase Storage URL'
+      )
     }
+
     const oldImagePath = decodeURIComponent(match[1])
     const bucket = firebaseHelper.storage.bucket()
     // Save new image in storage
@@ -36,9 +41,16 @@ export const updateImage = v2.https.onRequest(async (request, response) => {
     const token = crypto.randomUUID()
     await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } })
     const firebaseUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(finalPath)}?alt=media&token=${token}`
-    response.status(StatusCodes.OK).send({ data: firebaseUrl })
+
+    return {
+      data: firebaseUrl
+    }
   } catch (e) {
-    console.error('An error occurred when updateImage was called', e)
-    response.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ data: 'Error updating image' })
+    if (e instanceof HttpsError) throw e
+    throw new HttpsError(
+      'internal',
+      'Error updating image',
+      'An internal error occurred while updating the image'
+    )
   }
 })

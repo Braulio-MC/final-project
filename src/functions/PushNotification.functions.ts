@@ -1,68 +1,134 @@
-import * as v2 from 'firebase-functions/v2'
-import ErrorResponse from '../core/ErrorResponse'
-import { StatusCodes } from 'http-status-codes'
+import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FIRESTORE_COLLECTION_USER, FIRESTORE_SUBCOLLECTION_USER_TOKEN } from '../core/Constants'
 import { firebaseHelper } from '../di/Container'
 
-export const create = v2.https.onRequest((request, response) => {
-  const collectionName = FIRESTORE_COLLECTION_USER
-  const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
-  const userId = request.body.data.userId
-  const token = request.body.data.token
-  if (typeof userId !== 'string' || typeof token !== 'string') {
-    throw new ErrorResponse('userId and token must be strings', StatusCodes.BAD_REQUEST)
+export const create = onCall(async (request, _response) => {
+  try {
+    const collectionName = FIRESTORE_COLLECTION_USER
+    const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
+    const { userId, token } = request.data
+
+    if (typeof userId !== 'string' || typeof token !== 'string') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input types',
+        'userId and token must be strings'
+      )
+    }
+
+    if (userId === '' || token === '') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Empty input values',
+        'userId and token must not be empty'
+      )
+    }
+
+    const newObj = {
+      userId,
+      token,
+      createdAt: FieldValue.serverTimestamp()
+    }
+    const documentRef = await firebaseHelper.firestore.collection(collectionName)
+      .doc(userId)
+      .collection(subCollectionName)
+      .add(newObj)
+
+    return {
+      message: 'Token added successfully',
+      data: {
+        documentId: documentRef.id
+      }
+    }
+  } catch (e) {
+    if (e instanceof HttpsError) throw e
+    throw new HttpsError(
+      'internal',
+      'Error removing category',
+      'An internal error occurred while removing the category'
+    )
   }
-  if (userId === '' || token === '') {
-    throw new ErrorResponse('userId and token must not be empty', StatusCodes.BAD_REQUEST)
-  }
-  const newObj = {
-    userId,
-    token,
-    createdAt: FieldValue.serverTimestamp()
-  }
-  firebaseHelper.firestore.collection(collectionName)
-    .doc(userId)
-    .collection(subCollectionName)
-    .add(newObj)
-    .then(_ => {
-      response.status(StatusCodes.OK).send({ data: 'Token created successfully' })
-    })
-    .catch(e => {
-      console.error('An error occurred when create (push notification) was called:', e)
-      throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
-    })
 })
 
-export const remove = v2.https.onRequest(async (request, response) => {
-  const collectionName = FIRESTORE_COLLECTION_USER
-  const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
-  const userId = request.body.data.userId
-  const token = request.body.data.token
-  if (typeof userId !== 'string' || typeof token !== 'string') {
-    throw new ErrorResponse('userId and token must be strings', StatusCodes.BAD_REQUEST)
-  }
-  if (userId === '' || token === '') {
-    throw new ErrorResponse('userId and token must not be empty', StatusCodes.BAD_REQUEST)
-  }
-  const userTokens = await firebaseHelper.firestore.collection(collectionName)
-    .doc(userId)
-    .collection(subCollectionName)
-    .where('userId', '==', userId)
-    .where('token', '==', token)
-    .get()
-  if (!userTokens.empty) {
-    const batch = firebaseHelper.firestore.batch()
-    userTokens.docs.forEach(doc => {
-      batch.delete(doc.ref)
-    })
-    batch.commit()
-      .then(_ => {
-        response.status(StatusCodes.OK).send({ data: 'Token removed successfully' })
+export const remove = onCall(async (request, _response) => {
+  try {
+    const collectionName = FIRESTORE_COLLECTION_USER
+    const subCollectionName = FIRESTORE_SUBCOLLECTION_USER_TOKEN
+    const { userId, token } = request.data
+
+    if (typeof userId !== 'string' || typeof token !== 'string') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input types',
+        'userId and token must be strings'
+      )
+    }
+
+    if (userId === '' || token === '') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Empty input values',
+        'userId and token must not be empty'
+      )
+    }
+
+    let batch = firebaseHelper.firestore.batch()
+    const batchLimit = 300
+    const userTokensRef = firebaseHelper.firestore.collection(collectionName)
+      .doc(userId)
+      .collection(subCollectionName)
+    let query = userTokensRef
+      .where('userId', '==', userId)
+      .where('token', '==', token)
+      .limit(batchLimit)
+    let needUpdate = false
+    let processedCount = 0
+
+    while (true) {
+      const userTokensSnapshot = await query.get()
+
+      if (userTokensSnapshot.empty) break
+
+      userTokensSnapshot.docs.forEach((doc) => {
+        if (doc.exists) {
+          batch.delete(doc.ref)
+          processedCount++
+          needUpdate = true
+        }
       })
-      .catch(e => {
-        console.error('An error occurred when remove (push notification) was called:', e)
-        throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
-      })
+
+      if (needUpdate) {
+        await batch.commit()
+        batch = firebaseHelper.firestore.batch()
+        needUpdate = false
+      }
+
+      if (userTokensSnapshot.docs.length < batchLimit) break
+      const lastDoc = userTokensSnapshot.docs[userTokensSnapshot.docs.length - 1]
+      query = userTokensRef
+        .where('userId', '==', userId)
+        .where('token', '==', token)
+        .startAfter(lastDoc)
+        .limit(batchLimit)
+    }
+
+    if (needUpdate) {
+      await batch.commit()
+    }
+
+    return {
+      message: 'Token removed successfully',
+      data: {
+        processedCount
+      }
+    }
+  } catch (e) {
+    if (e instanceof HttpsError) throw e
+    throw new HttpsError(
+      'internal',
+      'Error removing category',
+      'An internal error occurred while removing the category'
+    )
   }
 })

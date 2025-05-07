@@ -1,88 +1,140 @@
-import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
-import * as v2 from 'firebase-functions/v2'
-import { StatusCodes } from 'http-status-codes'
-import ErrorResponse from '../core/ErrorResponse'
-import OrderStatuses from '../core/OrderStatuses'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import {
-  FIRESTORE_COLLECTION_ORDER,
   FIRESTORE_COLLECTION_PRODUCT,
   FIRESTORE_COLLECTION_PRODUCT_FAVORITE,
-  FIRESTORE_COLLECTION_PRODUCT_REVIEW,
-  FIRESTORE_SUBCOLLECTION_ORDER,
   FIRESTORE_SUBCOLLECTION_SHOPPING_CART
 } from '../core/Constants'
 import { firebaseHelper } from '../di/Container'
 
-export const update = v2.https.onRequest(async (request, response) => {
+export const update = onCall(async (request, _response) => {
   try {
     const collectionName = FIRESTORE_COLLECTION_PRODUCT
     const productFavoritesCollectionName = FIRESTORE_COLLECTION_PRODUCT_FAVORITE
     const shoppingCartProductsCollectionName = FIRESTORE_SUBCOLLECTION_SHOPPING_CART
-    const id = request.body.data.id
-    const name = request.body.data.name
-    const description = request.body.data.description
-    const price = request.body.data.price
-    const image = request.body.data.image
-    const quantity = request.body.data.quantity
-    const categoryId = request.body.data.categoryId
-    const categoryName = request.body.data.categoryName
-    const categoryParentName = request.body.data.categoryParentName
-    const storeId = request.body.data.storeId
-    const storeName = request.body.data.storeName
-    const storeOwnerId = request.body.data.storeOwnerId
-    const usingDefaultDiscount = request.body.data.usingDefaultDiscount
-    const discountId = request.body.data.discountId
-    const discountPercentage = request.body.data.discountPercentage
-    const discountStartDate = request.body.data.discountStartDate
-    const discountEndDate = request.body.data.discountEndDate
-    if (typeof id !== 'string' || typeof name !== 'string' || typeof description !== 'string' || typeof image !== 'string' || typeof categoryId !== 'string' || typeof categoryName !== 'string' || typeof categoryParentName !== 'string' || typeof storeId !== 'string' || typeof storeName !== 'string' || typeof storeOwnerId !== 'string' || typeof discountId !== 'string') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name, description, image, categoryId, categoryName, categoryParentName, storeId, storeName, storeOwnerId, discountId must be strings' })
-      return
+    const {
+      id,
+      name,
+      description,
+      price,
+      image,
+      quantity,
+      categories,
+      storeId,
+      storeName,
+      storeOwnerId,
+      usingDefaultDiscount,
+      discountId,
+      discountPercentage,
+      discountStartDate,
+      discountEndDate
+    } = request.data
+
+    if (typeof id !== 'string' || typeof name !== 'string' || typeof description !== 'string' || typeof image !== 'string' || typeof storeId !== 'string' || typeof storeName !== 'string' || typeof storeOwnerId !== 'string' || typeof discountId !== 'string') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid input types',
+        'id, name, description, image, storeId, storeName, storeOwnerId or discountId must be strings'
+      )
     }
-    if (id === '' || name === '' || description === '' || categoryId === '' || categoryName === '' || storeId === '' || storeName === '' || storeOwnerId === '' || discountId === '') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'id, name, description, categoryId, categoryName, storeId, storeName, storeOwnerId, discountId must not be empty' })
-      return
+
+    if (id === '' || name === '' || description === '' || storeId === '' || storeName === '' || storeOwnerId === '' || discountId === '') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Empty input values',
+        'id, name, description, image, storeId, storeName, storeOwnerId or discountId must not be empty'
+      )
     }
-    if (typeof price !== 'number' || typeof quantity !== 'number' || typeof discountPercentage !== 'number') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'price, quantity, discountPercentage must be numbers' })
-      return
+
+    if (!Array.isArray(categories)) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid categories format',
+        'categories must be an array'
+      )
     }
-    if (typeof usingDefaultDiscount !== 'boolean') {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'usingDefaultDiscount must be a boolean' })
-      return
+
+    if (categories.length === 0) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Empty categories',
+        'At least one category must be provided'
+      )
     }
-    if (price < 1 || quantity < 1) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'price and quantity must be greater than 0' })
-      return
-    }
-    if (discountPercentage < 0 || discountPercentage > 100) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'discountPercentage must be between 1 and 100' })
-      return
-    }
-    if (isNaN(discountStartDate.value) || isNaN(discountEndDate.value)) {
-      response.status(StatusCodes.BAD_REQUEST).send({ data: 'discountStartDate and discountEndDate must be numbers' })
-      return
-    }
-    const startDateTimestamp = Timestamp.fromMillis(+discountStartDate.value)
-    const endDateTimestamp = Timestamp.fromMillis(+discountEndDate.value)
-    if (!usingDefaultDiscount) {
-      if (startDateTimestamp.toMillis() >= endDateTimestamp.toMillis()) {
-        response.status(StatusCodes.BAD_REQUEST).send({ data: 'discountStartDate must be before discountEndDate' })
-        return
+
+    for (const category of categories) {
+      if (typeof category.id !== 'string' || typeof category.name !== 'string') {
+        throw new HttpsError(
+          'invalid-argument',
+          'Invalid category format',
+          'Each category must have id and name as strings'
+        )
+      }
+      if (category.id === '' || category.name === '') {
+        throw new HttpsError(
+          'invalid-argument',
+          'Empty category values',
+          'Category id and name must not be empty'
+        )
       }
     }
-    const batch = firebaseHelper.firestore.batch()
+
+    if (typeof price !== 'number' || typeof quantity !== 'number' || typeof discountPercentage !== 'number' ||
+      typeof discountStartDate !== 'number' || typeof discountEndDate !== 'number') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid number types',
+        'price, quantity, discountPercentage, discountStartDate or discountEndDate must be numbers'
+      )
+    }
+
+    if (typeof usingDefaultDiscount !== 'boolean') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid boolean type',
+        'usingDefaultDiscount must be a boolean'
+      )
+    }
+
+    if (price < 1 || quantity < 1) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid values',
+        'price and quantity must be greater than 0'
+      )
+    }
+
+    if (discountPercentage < 0 || discountPercentage > 100) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid discount percentage',
+        'discountPercentage must be between 1 and 100'
+      )
+    }
+
+    const startDateTimestamp = Timestamp.fromMillis(discountStartDate)
+    const endDateTimestamp = Timestamp.fromMillis(discountEndDate)
+
+    if (!usingDefaultDiscount && startDateTimestamp.toMillis() >= endDateTimestamp.toMillis()) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Invalid date range',
+        'discountStartDate must be before discountEndDate'
+      )
+    }
+
+    let batch = firebaseHelper.firestore.batch()
+    let productFavoritesCount = 0
+    let shoppingCartProductsCount = 0
+    let needUpdate = false
+    const batchSize = 300
     const updatedAt = FieldValue.serverTimestamp()
     const updateObj: { [k: string]: any } = {
       name,
       description,
       price,
       quantity,
-      category: {
-        id: categoryId,
-        name: categoryName,
-        parentName: categoryParentName
-      },
+      categories: categories.map(cat => ({ id: cat.id, name: cat.name })),
       store: {
         id: storeId,
         name: storeName,
@@ -118,111 +170,86 @@ export const update = v2.https.onRequest(async (request, response) => {
       updateProductFavoritesObj.productImage = image
       updateShoppingCartProductsObj['product.image'] = image
     }
-    const productRef = firebaseHelper.firestore.collection(collectionName).doc(id)
-    batch.update(productRef, updateObj)
-    const productFavoritesQuerySnapshot = await firebaseHelper.firestore.collection(productFavoritesCollectionName)
-      .where('productId', '==', id)
-      .get()
-    if (!productFavoritesQuerySnapshot.empty) {
-      productFavoritesQuerySnapshot.forEach(productFavorite => {
-        batch.update(productFavorite.ref, updateProductFavoritesObj)
-      })
-    }
-    const shoppingCartProductsQuerySnapshot = await firebaseHelper.firestore.collectionGroup(shoppingCartProductsCollectionName)
-      .where(new FieldPath('product', 'id'), '==', id)
-      .get()
-    if (!shoppingCartProductsQuerySnapshot.empty) {
-      shoppingCartProductsQuerySnapshot.forEach(shoppingCartProduct => {
-        batch.update(shoppingCartProduct.ref, updateShoppingCartProductsObj)
-      })
-    }
-    await batch.commit()
-    response.status(StatusCodes.OK).send({ data: 'Product updated successfully' })
-  } catch (e) {
-    console.error('An error occurred when update (product) was called', e)
-    response.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ data: 'Error updating product' })
-  }
-})
 
-export const remove = v2.https.onRequest(async (request, response) => {
-  try {
-    const collectionName = FIRESTORE_COLLECTION_PRODUCT
-    const orderCollectionName = FIRESTORE_COLLECTION_ORDER
-    const orderLinesCollectionName = FIRESTORE_SUBCOLLECTION_ORDER
-    const productFavoritesCollectionName = FIRESTORE_COLLECTION_PRODUCT_FAVORITE
-    const productReviewsCollectionName = FIRESTORE_COLLECTION_PRODUCT_REVIEW
-    const shoppingCartProductsCollectionName = FIRESTORE_SUBCOLLECTION_SHOPPING_CART
-    const id = request.body.data.id
-    if (typeof id !== 'string') {
-      throw new Error('id must be a string')
+    await firebaseHelper.firestore.collection(collectionName)
+      .doc(id)
+      .update(updateObj)
+
+    let favoritesQuery = firebaseHelper.firestore.collection(productFavoritesCollectionName)
+      .where('productId', '==', id)
+      .limit(batchSize)
+
+    while (true) {
+      const favoritesSnapshot = await favoritesQuery.get()
+
+      if (favoritesSnapshot.empty) break
+
+      favoritesSnapshot.docs.forEach(doc => {
+        batch.update(doc.ref, updateProductFavoritesObj)
+        productFavoritesCount++
+        needUpdate = true
+      })
+
+      if (needUpdate) {
+        await batch.commit()
+        batch = firebaseHelper.firestore.batch()
+        needUpdate = false
+      }
+
+      if (favoritesSnapshot.docs.length < batchSize) break
+      const lastDoc = favoritesSnapshot.docs[favoritesSnapshot.docs.length - 1]
+      favoritesQuery = favoritesQuery
+        .startAfter(lastDoc)
+        .limit(batchSize)
     }
-    if (id === '') {
-      throw new Error('id must not be empty')
+
+    let shoppingCartProductsQuery = firebaseHelper.firestore
+      .collectionGroup(shoppingCartProductsCollectionName)
+      .where('product.id', '==', id)
+      .limit(batchSize)
+
+    while (true) {
+      const shoppingCartProductsSnapshot = await shoppingCartProductsQuery.get()
+
+      if (shoppingCartProductsSnapshot.empty) break
+
+      shoppingCartProductsSnapshot.docs.forEach(doc => {
+        batch.update(doc.ref, updateShoppingCartProductsObj)
+        shoppingCartProductsCount++
+        needUpdate = true
+      })
+
+      if (needUpdate) {
+        await batch.commit()
+        batch = firebaseHelper.firestore.batch()
+        needUpdate = false
+      }
+
+      if (shoppingCartProductsSnapshot.docs.length < batchSize) break
+      const lastDoc = shoppingCartProductsSnapshot.docs[shoppingCartProductsSnapshot.docs.length - 1]
+      shoppingCartProductsQuery = shoppingCartProductsQuery
+        .startAfter(lastDoc)
+        .limit(batchSize)
     }
-    const ordersQuerySnapshot = await firebaseHelper.firestore.collection(orderCollectionName)
-      .where('status', '!=', OrderStatuses.DELIVERED)
-      .get()
-    let isProductInNonDeliveredOrder = false
-    for (const order of ordersQuerySnapshot.docs) {
-      const productsSnapshot = await order.ref.collection(orderLinesCollectionName)
-        .where(new FieldPath('product', 'id'), '==', id)
-        .get()
-      if (!productsSnapshot.empty) {
-        isProductInNonDeliveredOrder = true
-        break
+
+    if (needUpdate) {
+      await batch.commit()
+    }
+
+    return {
+      message: 'Product updated successfully',
+      data: {
+        updatedId: id,
+        affectedProductFavorites: productFavoritesCount,
+        affectedShoppingCartProducts: shoppingCartProductsCount
       }
     }
-    if (!isProductInNonDeliveredOrder) {
-      const batch = firebaseHelper.firestore.batch()
-      const productRef = firebaseHelper.firestore.collection(collectionName).doc(id)
-      const productImageUrl = await (await productRef.get()).data()?.image
-      batch.delete(productRef)
-      const productFavoritesQuerySnapshot = await firebaseHelper.firestore.collection(productFavoritesCollectionName)
-        .where('productId', '==', id)
-        .get()
-      if (!productFavoritesQuerySnapshot.empty) {
-        productFavoritesQuerySnapshot.forEach(productFavorite => {
-          batch.delete(productFavorite.ref)
-        })
-      }
-      const productReviewsQuerySnapshot = await firebaseHelper.firestore.collection(productReviewsCollectionName)
-        .where('productId', '==', id)
-        .get()
-      if (!productReviewsQuerySnapshot.empty) {
-        productReviewsQuerySnapshot.forEach(productReview => {
-          batch.delete(productReview.ref)
-        })
-      }
-      const shoppingCartProductsQuerySnapshot = await firebaseHelper.firestore.collectionGroup(shoppingCartProductsCollectionName)
-        .where(new FieldPath('product', 'id'), '==', id)
-        .get()
-      if (!shoppingCartProductsQuerySnapshot.empty) {
-        shoppingCartProductsQuerySnapshot.forEach(shoppingCartProduct => {
-          batch.delete(shoppingCartProduct.ref)
-        })
-      }
-      batch.commit()
-        .then(async _ => {
-          // Delete product image from storage
-          const image = decodeURIComponent(productImageUrl.split('/o/')[1].split('?alt=media')[0])
-          if (image !== '') {
-            const file = firebaseHelper.storage.bucket().file(image)
-            const [exists] = await file.exists()
-            if (exists) {
-              await file.delete()
-            }
-          }
-          response.status(StatusCodes.OK).send({ data: 'Product removed successfully' })
-        })
-        .catch(e => {
-          console.error('An error occurred when remove (product) was called', e)
-          throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
-        })
-    } else {
-      throw new Error('Product is in non-delivered order')
-    }
-  } catch (e: any) {
-    console.error('An error occurred when remove (product) was called', e)
-    throw new ErrorResponse(e, StatusCodes.INTERNAL_SERVER_ERROR)
+  } catch (e) {
+    if (e instanceof HttpsError) throw e
+    throw new HttpsError(
+      'internal',
+      'Error updating category',
+      'An internal error occurred while updating the category'
+    )
   }
 })
